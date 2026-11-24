@@ -44,7 +44,7 @@
     if (!msg) { if (bar) bar.remove(); return; }
     if (!bar) {
       bar = document.createElement("div"); bar.id = "xlProblem"; bar.setAttribute("role", "alert");
-      bar.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:70;max-width:calc(100% - 32px);background:var(--danger,#b42318);color:#fff;padding:10px 14px;border-radius:10px;font:500 14px system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.2)";
+      bar.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);top:calc(10px + env(safe-area-inset-top,0px));z-index:70;max-width:calc(100% - 32px);background:var(--danger,#b42318);color:#fff;padding:10px 14px;border-radius:10px;font:500 14px Figtree,system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.2)";
       document.body.append(bar);
     }
     bar.textContent = msg;
@@ -283,9 +283,9 @@
   function signInScreen(msg) {
     const d = document.createElement("div"); d.id = "xlSignin";
     d.style.cssText = "position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg,#eef1f4)";
-    d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:14px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:system-ui,sans-serif">' +
+    d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:14px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
       '<h1 style="margin:0;font-size:24px">Battery Stock</h1><p style="margin:0;color:var(--muted,#5b6876)">Sign in with your work Microsoft account to check batteries in and out.</p>' +
-      '<button type="button" id="xlSignBtn" style="border:0;border-radius:9px;padding:13px 16px;font:600 16px system-ui,sans-serif;cursor:pointer;background:var(--accent,#0f5bd8);color:#fff">Sign in with Microsoft</button>' +
+      '<button type="button" id="xlSignBtn" style="border:0;border-radius:9px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0f5bd8);color:#fff">Sign in with Microsoft</button>' +
       '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div></div>';
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
