@@ -35,7 +35,7 @@
   // Keep serial numbers as text in Excel and never let a cell start a formula.
   const cell = v => { if (typeof v === "number") return v; const s = v == null ? "" : String(v); return /^[=+\-@]/.test(s) || /^[\d.,\s]+(e\d+)?$/i.test(s) && s !== "" ? "'" + s : s; };
 
-  let me = { name: "Demo user", email: "demo@example.com" };
+  let me = { name: "Demo user", email: "demo@example.com", isAdmin: true };   // demo: you may try the settings
   const names = new Map();
 
   // ---------- a message bar for connection problems ----------
@@ -254,7 +254,7 @@
     doc(path) {
       return {
         id: path.split("/").pop(), path,
-        set: v => write(async () => { await backend.saveSettings(v); await refreshSettings(); }),
+        set: v => me.isAdmin ? write(async () => { await backend.saveSettings(v); await refreshSettings(); }) : Promise.reject(new Error("Only admins can change types and locations.")),
         onSnapshot(next) { st.ssubs.push(next); if (st.settings) setTimeout(fireSettings, 0); return () => { st.ssubs = st.ssubs.filter(f => f !== next); }; },
       };
     },
@@ -262,8 +262,8 @@
   const initials = n => (n || "?").split(/[\s.@]+/).filter(Boolean).slice(0, 2).map(x => x[0].toUpperCase()).join("");
   const avatar = n => "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" rx="24" fill="#0f5bd8"/><text x="24" y="30" font-family="sans-serif" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">${initials(n)}</text></svg>`);
   const user = {
-    async me() { return { id: me.email, name: me.name, email: me.email, avatarUrl: avatar(me.name), color: "#0f5bd8", isOwner: false, canEdit: true }; },
-    async id() { return me.email; }, async isOwner() { return false; }, async canEdit() { return true; }, async can() { return null; },
+    async me() { return { id: me.email, name: me.name, email: me.email, avatarUrl: avatar(me.name), color: "#0f5bd8", isOwner: !!me.isAdmin, canEdit: true }; },
+    async id() { return me.email; }, async isOwner() { return !!me.isAdmin; }, async canEdit() { return true; }, async can() { return null; },
     async name() { return me.name; },
     async profiles(ids) { const o = {}; for (const id of [].concat(ids)) { const nm = id === me.email ? me.name : names.get(id) || ""; o[id] = { id, name: nm, avatarUrl: avatar(nm), color: "#0f5bd8", email: id, isMe: id === me.email, guest: false }; } return o; },
     async search() { return []; },
@@ -309,7 +309,8 @@
       } catch (e) { signInScreen("Sign-in failed: " + (e.errorMessage || e.message || "unknown error")); return; }
       if (!account) { signInScreen(""); return; }
       pca.setActiveAccount(account);
-      me = { name: account.name || account.username, email: (account.username || "").toLowerCase() };
+      // Admins: users given the app role "Admin" (or config adminRole) in Entra ID > Enterprise applications > Users and groups
+      me = { name: account.name || account.username, email: (account.username || "").toLowerCase(), isAdmin: (((account.idTokenClaims || {}).roles) || []).includes(CFG.adminRole || "Admin") };
     }
     addTopButtons();
     readyResolve();
