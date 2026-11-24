@@ -55,8 +55,10 @@ header.top .brand > div{border-left:1px solid rgba(255,255,255,.22);padding-left
 h1{font-size:24px;font-weight:600;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
 header.top .sub{color:rgba(255,255,255,.66)}
-header.top{position:relative;padding-right:78px}
-header.top .who{position:absolute;top:16px;right:18px}   /* the signed-in person: pinned to the far top-right corner */
+header.top{position:relative}
+header.top .who{order:99}   /* the signed-in person: last, so far right when the buttons share the title row */
+header.top.wrapped{padding-right:78px}
+header.top.wrapped .who{position:absolute;top:16px;right:18px}   /* buttons wrapped below the title: pin the person to the top-right corner */
 .avatar{width:38px;height:38px;border-radius:50%;background:#fa530b;color:#ffffff;border:2px solid #ffffff;display:inline-flex;align-items:center;justify-content:center;font:700 15px var(--f-sans);letter-spacing:.02em;flex:none;cursor:default;user-select:none}
 header.top .btn.ghost{color:#ffffff;border-color:#ffffff;background:transparent}
 header.top .btn.ghost:hover{border-color:#ffffff}
@@ -1087,6 +1089,9 @@ td.dim{color:var(--muted)}
   fillSelects();
   { let m="auto"; try { const v=localStorage.getItem("bw.mode"); if (["auto","in","out"].includes(v)) m=v; } catch {} setMode(m); }
   { // dark-mode switch; without a saved choice the device setting decides
+    const hdr=document.querySelector("header.top"), tb=hdr.querySelector(".topbtns"), br=hdr.querySelector(".brand");
+    const fitHeader=()=>{ hdr.classList.remove("wrapped"); if (tb.offsetTop > br.offsetTop + br.offsetHeight/2) hdr.classList.add("wrapped"); };
+    addEventListener("resize", fitHeader); new MutationObserver(fitHeader).observe($("who"), {childList:true}); fitHeader(); if (document.fonts) document.fonts.ready.then(fitHeader);
     const root=document.documentElement, sw=$("themeSw"), mq=matchMedia("(prefers-color-scheme: dark)");
     const isDark=()=>(root.getAttribute("data-theme") || (mq.matches ? "dark" : "light"))==="dark";
     let v=""; try { v=localStorage.getItem("bw.theme")||""; } catch {}
