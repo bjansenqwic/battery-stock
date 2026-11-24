@@ -23,7 +23,7 @@
 /* Layout: QWIC black bar on top, then scan station (left, sticky) + stock ledger (right); stacks on phones, scan first.
    Look follows qwic.eu: light grey ground, near-black ink, black pill buttons, orange used sparingly. */
 :root{
-  --bg:#ffffff; --surface:#ffffff; --sunken:#f4f5f6; --line:#e2e5e7; --ink:#0a0a0a; --muted:#5f6569; --edge:#fa530b;   /* white page, QWIC-orange edges */
+  --bg:#ffffff; --surface:#ffffff; --sunken:#f4f5f6; --line:#e2e5e7; --ink:#0a0a0a; --muted:#5f6569; --edge:#d8dde0;   /* white page, light grey edges (white would vanish on white) */
   --accent:#0a0a0a; --accent-ink:#ffffff; --accent-soft:#e4e8ea; --brand:#fa530b;
   --in:#13733f; --in-soft:#dff0e6; --out:#fa530b; --out-soft:#feeadf; --danger:#b42318; --danger-soft:#fde7e5; --mkt:#6941c6; --mkt-soft:#efeafc; --tmp:#2f7d4f; --tmp-soft:#e4f2e9; --floor:#e1e6e8; --wall:#0a0a0a;
   --shadow:none;
@@ -32,12 +32,12 @@
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="orange"]){
   --bg:#0a0a0a; --surface:#161718; --sunken:#111213; --line:#2b2e30; --ink:#f2f4f5; --muted:#9aa1a6;
-  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b; --edge:#ff6a2b;
+  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b; --edge:#ffffff;
   --in:#4fcf8b; --in-soft:#13301f; --out:#ff6a2b; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
   --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0a0a0a; --surface:#161718; --sunken:#111213; --line:#2b2e30; --ink:#f2f4f5; --muted:#9aa1a6;
-  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b; --edge:#ff6a2b;
+  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b; --edge:#ffffff;
   --in:#4fcf8b; --in-soft:#13301f; --out:#ff6a2b; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
   --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 :root[data-theme="orange"]{--bg:#fa530b; --floor:#fde3d6; --shadow:0 1px 3px rgba(10,10,10,.12); color-scheme:light}
@@ -55,13 +55,15 @@ header.top .brand > div{border-left:1px solid rgba(255,255,255,.22);padding-left
 h1{font-size:24px;font-weight:600;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
 header.top .sub{color:rgba(255,255,255,.66)}
-header.top .who{color:#ffffff;font-size:14px;font-weight:600;order:9}   /* the signed-in person sits top right */
-header.top .btn.ghost{color:#ffffff;border-color:var(--edge);background:transparent}
+header.top{position:relative;padding-right:78px}
+header.top .who{position:absolute;top:16px;right:18px}   /* the signed-in person: pinned to the far top-right corner */
+.avatar{width:38px;height:38px;border-radius:50%;background:#fa530b;color:#ffffff;border:2px solid #ffffff;display:inline-flex;align-items:center;justify-content:center;font:700 15px var(--f-sans);letter-spacing:.02em;flex:none;cursor:default;user-select:none}
+header.top .btn.ghost{color:#ffffff;border-color:#ffffff;background:transparent}
 header.top .btn.ghost:hover{border-color:#ffffff}
 .themesw{display:inline-flex;align-items:center;gap:10px;background:none;border:0;padding:4px 2px;cursor:pointer;color:#ffffff;font:600 14px var(--f-sans)}
-.themesw .track{position:relative;width:46px;height:26px;border-radius:999px;border:1px solid var(--edge);background:transparent;transition:background .2s}
+.themesw .track{position:relative;width:46px;height:26px;border-radius:999px;border:1px solid #ffffff;background:transparent;transition:background .2s}
 .themesw .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#ffffff;transition:transform .2s}
-.themesw[aria-checked="true"] .track{background:var(--edge)}
+.themesw[aria-checked="true"] .track{background:#fa530b}
 .themesw[aria-checked="true"] .knob{transform:translateX(20px)}
 @media (prefers-reduced-motion:reduce){.themesw .track,.themesw .knob{transition:none}}
 @media (max-width:520px){header.top .brand{gap:12px}header.top .brand > div{padding-left:12px}header.top .logo{width:64px}h1{font-size:20px}}
@@ -240,7 +242,7 @@ td.dim{color:var(--muted)}
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><div class="who" id="who"></div><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
+    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button><div class="who" id="who"></div></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -1102,7 +1104,7 @@ td.dim{color:var(--muted)}
     if (user) {
       S.me = await user.me(); S.canEdit = S.me.canEdit; S.canWrite = await user.can("data.write");
       if (S.canWrite === false) { banner("You have view-only access: you can look up batteries but not check them in or out."); $("submitBtn").disabled = true; }
-      if (S.me.id) { $("who").replaceChildren(el("img",{src:S.me.avatarUrl,alt:""}), el("span",{text:S.me.name||"You"})); S.profiles[S.me.id] = { name: S.me.name }; }
+      if (S.me.id) { { const nm=S.me.name||"You", ini=nm.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?"; $("who").replaceChildren(el("span",{class:"avatar",text:ini,title:"Signed in: "+nm,"aria-label":"Signed in: "+nm,role:"img"})); } S.profiles[S.me.id] = { name: S.me.name }; }
     }
     if (!db) { S.loaded = true; banner("Couldn't connect to the Excel file."); renderLedger(); return; }
     S.db = db;
