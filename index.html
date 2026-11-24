@@ -23,21 +23,21 @@
 /* Layout: QWIC black bar on top, then scan station (left, sticky) + stock ledger (right); stacks on phones, scan first.
    Look follows qwic.eu: light grey ground, near-black ink, black pill buttons, orange used sparingly. */
 :root{
-  --bg:#fa530b; --surface:#ffffff; --sunken:#f2f4f5; --line:#d8dde0; --ink:#0a0a0a; --muted:#5f6569;   /* page ground: QWIC orange */
+  --bg:#ffffff; --surface:#ffffff; --sunken:#f4f5f6; --line:#e2e5e7; --ink:#0a0a0a; --muted:#5f6569; --edge:#fa530b;   /* white page, QWIC-orange edges */
   --accent:#0a0a0a; --accent-ink:#ffffff; --accent-soft:#e4e8ea; --brand:#fa530b;
   --in:#13733f; --in-soft:#dff0e6; --out:#fa530b; --out-soft:#feeadf; --danger:#b42318; --danger-soft:#fde7e5; --mkt:#6941c6; --mkt-soft:#efeafc; --tmp:#2f7d4f; --tmp-soft:#e4f2e9; --floor:#e1e6e8; --wall:#0a0a0a;
-  --shadow:0 1px 3px rgba(10,10,10,.12);
+  --shadow:none;
   --f-sans:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;   /* one typeface everywhere; numbers use tabular figures */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="orange"]){
   --bg:#0a0a0a; --surface:#161718; --sunken:#111213; --line:#2b2e30; --ink:#f2f4f5; --muted:#9aa1a6;
-  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b;
+  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b; --edge:#ff6a2b;
   --in:#4fcf8b; --in-soft:#13301f; --out:#ff6a2b; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
   --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0a0a0a; --surface:#161718; --sunken:#111213; --line:#2b2e30; --ink:#f2f4f5; --muted:#9aa1a6;
-  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b;
+  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b; --edge:#ff6a2b;
   --in:#4fcf8b; --in-soft:#13301f; --out:#ff6a2b; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
   --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 :root[data-theme="orange"]{--bg:#fa530b; --floor:#fde3d6; --shadow:0 1px 3px rgba(10,10,10,.12); color-scheme:light}
@@ -48,33 +48,36 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:1
 .wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:14px 20px;flex-wrap:wrap;background:#0a0a0a;color:#ffffff;padding:18px 22px;border-radius:8px}
 #modelWrap[hidden] + .field{grid-column:1 / -1}
-header.top{border:1px solid var(--line)}
+header.top{border:1px solid var(--edge)}
 header.top .brand{display:flex;align-items:center;gap:18px;min-width:0}
 header.top .logo{width:84px;height:auto;flex:none;color:#ffffff}
 header.top .brand > div{border-left:1px solid rgba(255,255,255,.22);padding-left:18px;min-width:0}
 h1{font-size:24px;font-weight:600;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
 header.top .sub{color:rgba(255,255,255,.66)}
-header.top .who{color:rgba(255,255,255,.75)}
-header.top .btn.ghost{color:#ffffff;border-color:rgba(255,255,255,.4);background:transparent}
+header.top .who{color:#ffffff;font-size:14px;font-weight:600;order:9}   /* the signed-in person sits top right */
+header.top .btn.ghost{color:#ffffff;border-color:var(--edge);background:transparent}
 header.top .btn.ghost:hover{border-color:#ffffff}
-header.top .themesel{width:auto;background:transparent;color:#ffffff;border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:8px 14px;font:600 14px var(--f-sans);cursor:pointer}
-header.top .themesel:hover{border-color:#ffffff}
-header.top .themesel option{color:#0a0a0a;background:#ffffff}
+.themesw{display:inline-flex;align-items:center;gap:10px;background:none;border:0;padding:4px 2px;cursor:pointer;color:#ffffff;font:600 14px var(--f-sans)}
+.themesw .track{position:relative;width:46px;height:26px;border-radius:999px;border:1px solid var(--edge);background:transparent;transition:background .2s}
+.themesw .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#ffffff;transition:transform .2s}
+.themesw[aria-checked="true"] .track{background:var(--edge)}
+.themesw[aria-checked="true"] .knob{transform:translateX(20px)}
+@media (prefers-reduced-motion:reduce){.themesw .track,.themesw .knob{transition:none}}
 @media (max-width:520px){header.top .brand{gap:12px}header.top .brand > div{padding-left:12px}header.top .logo{width:64px}h1{font-size:20px}}
 .who{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
 .who img{width:24px;height:24px;border-radius:50%}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.stat{background:var(--surface);border:1px solid var(--edge);border-radius:8px;padding:14px 16px}
 .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
 .stat .v{font-family:var(--f-sans);font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;margin-top:2px}
 .stat.in .v{color:var(--in)} .stat.out .v{color:var(--out)}
 .main{display:grid;grid-template-columns:380px minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);min-width:0}
+.panel{background:var(--surface);border:1px solid var(--edge);border-radius:8px;box-shadow:var(--shadow);min-width:0}
 .scan{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);padding:16px;display:flex;flex-direction:column;gap:14px}
 @media (max-width:900px){.scan{position:static}}
-.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--sunken);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--sunken);border:1px solid var(--edge);border-radius:999px;padding:4px;gap:4px}
 .seg button{border-radius:999px!important}
 .seg button{border:0;background:transparent;color:var(--muted);font:600 15px var(--f-sans);padding:10px;border-radius:7px;cursor:pointer}
 .seg button[aria-pressed="true"].auto{background:var(--accent);color:var(--accent-ink)}
@@ -98,23 +101,23 @@ header.top .themesel option{color:#0a0a0a;background:#ffffff}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="orange"]) .seg button[aria-pressed="true"]{color:#0b1218}}
 label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
 .field{display:flex;flex-direction:column}
-input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--edge);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
 textarea{resize:vertical;min-height:58px}
 input[readonly]{background:var(--sunken);color:var(--muted);cursor:not-allowed}
-input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--brand);outline-offset:1px;border-color:var(--brand)}
 .snrow{display:flex;gap:8px}
 #sn{font-family:var(--f-mono);font-size:20px;font-weight:500;letter-spacing:.03em;padding:11px 12px;text-transform:uppercase}
 @media (max-width:520px){#sn{font-size:16px;letter-spacing:0}}
-.iconbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--sunken);color:var(--ink);border-radius:8px;padding:0 14px;cursor:pointer;font:600 14px var(--f-sans)}
+.iconbtn{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--edge);background:var(--sunken);color:var(--ink);border-radius:8px;padding:0 14px;cursor:pointer;font:600 14px var(--f-sans)}
 .iconbtn:hover{border-color:var(--accent)}
 .iconbtn svg{width:20px;height:20px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn{border:0;border-radius:999px;padding:13px 16px;font:600 16px var(--f-sans);cursor:pointer;background:var(--accent);color:var(--accent-ink)}
 .btn.in{background:var(--in);color:#fff}.btn.out{background:var(--out);color:#fff}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-size:14px;padding:8px 12px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--edge);font-size:14px;padding:8px 12px}
 .btn.danger{background:transparent;color:var(--danger);border:1px solid var(--danger);font-size:14px;padding:8px 12px}
-.status-card{border-radius:8px;padding:10px 12px;font-size:14px;border:1px solid var(--line);background:var(--sunken)}
+.status-card{border-radius:8px;padding:10px 12px;font-size:14px;border:1px solid var(--edge);background:var(--sunken)}
 .status-card.in{background:var(--in-soft);border-color:transparent}
 .status-card.out{background:var(--out-soft);border-color:transparent}
 .status-card.warn{background:var(--danger-soft);border-color:transparent;color:var(--danger)}
@@ -122,13 +125,13 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .snwrap{position:relative}
 .scan.dropping{outline:2px dashed var(--accent);outline-offset:-6px}
 .iconbtn:disabled{opacity:.6;cursor:progress}
-.suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);max-height:320px;overflow:auto;padding:4px}
+.suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;background:var(--surface);border:1px solid var(--edge);border-radius:8px;box-shadow:var(--shadow);max-height:320px;overflow:auto;padding:4px}
 .sugg{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;width:100%;text-align:left;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:7px;cursor:pointer;font:inherit}
 .sugg:hover,.sugg.active{background:var(--accent-soft)}
 .sugg .s1{font-family:var(--f-mono);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sugg .s2{grid-column:1 / -1;font-size:12px;color:var(--muted)}
 .sugg mark{background:transparent;color:var(--accent);font-weight:700}
-.shelfpick{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:var(--sunken)}
+.shelfpick{display:flex;flex-direction:column;gap:8px;border:1px solid var(--edge);border-radius:8px;padding:10px 12px;background:var(--sunken)}
 .shelfpick .head{font-size:13px;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:8px 10px;cursor:pointer;font:600 14px var(--f-mono);display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:92px}
@@ -237,7 +240,7 @@ td.dim{color:var(--muted)}
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><div class="who" id="who"></div><select id="themeSel" class="themesel" aria-label="Colour theme"><option value="">Theme: automatic</option><option value="light">Theme: light</option><option value="dark">Theme: dark</option></select><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
+    <div class="topbtns"><div class="who" id="who"></div><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -1081,12 +1084,14 @@ td.dim{color:var(--muted)}
   $("settingsBtn").addEventListener("click",openSettings); $("setCancel").addEventListener("click",()=>{ $("setModal").hidden=true; }); $("setSave").addEventListener("click",saveSettings);
   fillSelects();
   { let m="auto"; try { const v=localStorage.getItem("bw.mode"); if (["auto","in","out"].includes(v)) m=v; } catch {} setMode(m); }
-  { const root=document.documentElement, hostTheme=root.getAttribute("data-theme"), sel=$("themeSel");
-    const apply=v=>{ if (v) root.setAttribute("data-theme", v); else if (hostTheme) root.setAttribute("data-theme", hostTheme); else root.removeAttribute("data-theme"); };
+  { // dark-mode switch; without a saved choice the device setting decides
+    const root=document.documentElement, sw=$("themeSw"), mq=matchMedia("(prefers-color-scheme: dark)");
+    const isDark=()=>(root.getAttribute("data-theme") || (mq.matches ? "dark" : "light"))==="dark";
     let v=""; try { v=localStorage.getItem("bw.theme")||""; } catch {}
-    if (v==="orange") v="light"; if (!["","light","dark"].includes(v)) v="";
-    sel.value=v; apply(v);
-    sel.addEventListener("change",()=>{ apply(sel.value); try { localStorage.setItem("bw.theme", sel.value); } catch {} }); }
+    if (v==="light" || v==="dark") root.setAttribute("data-theme", v);
+    const paint=()=>sw.setAttribute("aria-checked", String(isDark()));
+    paint(); mq.addEventListener("change", paint);
+    sw.addEventListener("click",()=>{ const nv=isDark() ? "light" : "dark"; root.setAttribute("data-theme", nv); try { localStorage.setItem("bw.theme", nv); } catch {} paint(); }); }
   try { const t=localStorage.getItem("bw.tab"); if (t && ["stock","map","all","log","loc"].includes(t)) S.tab=t; } catch {}
   setTab(S.tab);
 
@@ -1097,7 +1102,7 @@ td.dim{color:var(--muted)}
     if (user) {
       S.me = await user.me(); S.canEdit = S.me.canEdit; S.canWrite = await user.can("data.write");
       if (S.canWrite === false) { banner("You have view-only access: you can look up batteries but not check them in or out."); $("submitBtn").disabled = true; }
-      if (S.me.id) { $("who").replaceChildren(el("img",{src:S.me.avatarUrl,alt:""}), el("span",{text:"Signed in as "+(S.me.name||"you")})); S.profiles[S.me.id] = { name: S.me.name }; }
+      if (S.me.id) { $("who").replaceChildren(el("img",{src:S.me.avatarUrl,alt:""}), el("span",{text:S.me.name||"You"})); S.profiles[S.me.id] = { name: S.me.name }; }
     }
     if (!db) { S.loaded = true; banner("Couldn't connect to the Excel file."); renderLedger(); return; }
     S.db = db;
