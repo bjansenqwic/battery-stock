@@ -49,10 +49,10 @@
     }
     bar.textContent = msg;
   }
-  const explain = e => e && e.status === 404 ? "Couldn't find the Excel file or one of its tables (Movements, Types, Locations). Check the link in config.js."
+  const explain = e => e && e.userMessage ? e.userMessage
+    : e && e.status === 404 ? "Couldn't find the Excel file or one of its tables (Movements, Types, Locations). Check the link in config.js."
     : e && e.status === 403 ? "You don't have access to the Excel file. Ask for edit access to the file."
     : e && e.status === 423 ? "The Excel file is locked. Close it in the desktop Excel app; Excel for the web is fine."
-    : e && e.userMessage ? e.userMessage
     : "Couldn't reach the Excel file. Check your internet connection." + (e && e.message ? " (" + e.message + ")" : "");
 
   // ---------- demo backend: this browser only ----------
@@ -89,12 +89,38 @@
   const xl = {
     root: null, webUrl: null, head: null,
     async resolve() {
-      if (this.root) return;
-      const b64 = btoa(unescape(encodeURIComponent(CFG.workbookUrl.trim()))).replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
-      const item = await graph(`/shares/u!${b64}/driveItem?$select=id,name,webUrl,parentReference`);
-      this.root = `/drives/${item.parentReference.driveId}/items/${item.id}/workbook`;
-      this.webUrl = item.webUrl;
-      const a = document.getElementById("xlOpen"); if (a && this.webUrl) { a.href = this.webUrl; a.hidden = false; }
+      if (!this._p) this._p = (async () => {
+        const b64 = btoa(unescape(encodeURIComponent(CFG.workbookUrl.trim()))).replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const item = await graph(`/shares/u!${b64}/driveItem?$select=id,name,webUrl,parentReference`);
+        this.root = `/drives/${item.parentReference.driveId}/items/${item.id}/workbook`;
+        this.webUrl = item.webUrl;
+        const a = document.getElementById("xlOpen"); if (a && this.webUrl) { a.href = this.webUrl; a.hidden = false; }
+        try { await this.ensureTables(); }
+        catch (e) { if (!e.userMessage) e.userMessage = "The Excel file is missing the Movements, Types and Locations tables, and the app couldn't add them. Copy the sheets from the template Battery-Stock.xlsx into the file."; throw e; }
+      })().catch(e => { this._p = null; throw e; });
+      await this._p;
+    },
+    // An empty workbook gets the three tables it needs, with the battery types and locations filled in.
+    async ensureTables() {
+      const list = async path => (((await graph(path)) || {}).value || []).map(x => String(x.name).toLowerCase());
+      const tables = new Set(await list(`${this.root}/tables?$select=name`));
+      const sheets = new Set(await list(`${this.root}/worksheets?$select=name`));
+      const d = window.BATTERY_DEFAULTS || { types: [], locations: [] };
+      const plan = [
+        [TABLE.mov, COLS.map(c => c[0]), []],
+        [TABLE.types, ["Type", "S/N starts with"], d.types.map(t => [t.name, (t.codes || []).join(", ")])],
+        [TABLE.locs, ["Location", "Max", "For"], d.locations.map(l => [l.name, l.cap || "", ONLY_TO_TEXT[l.only] || ""])],
+      ];
+      for (const [name, head, rows] of plan) {
+        if (tables.has(name.toLowerCase())) continue;
+        if (!sheets.has(name.toLowerCase())) await graph(`${this.root}/worksheets/add`, { method: "POST", body: { name } });
+        const body = rows.length ? rows : [head.map(() => "")];
+        const end = String.fromCharCode(64 + head.length) + (body.length + 1);
+        const ws = `${this.root}/worksheets/${encodeURIComponent(name)}`;
+        await graph(`${ws}/range(address='A1:${end}')`, { method: "PATCH", body: { values: [head, ...body.map(r => r.map(cell))] } });
+        const t = await graph(`${ws}/tables/add`, { method: "POST", body: { address: `A1:${end}`, hasHeaders: true } });
+        await graph(`${this.root}/tables/${encodeURIComponent(t.id)}`, { method: "PATCH", body: { name } });
+      }
     },
     t(name) { return `${this.root}/tables/${encodeURIComponent(name)}`; },
     async values(name) { await this.resolve(); const r = await graph(this.t(name) + "/range?$select=values"); return (r && r.values) || []; },
