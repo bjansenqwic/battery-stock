@@ -23,10 +23,10 @@
 /* Layout: QWIC black bar on top, then scan station (left, sticky) + stock ledger (right); stacks on phones, scan first.
    Look follows qwic.eu: light grey ground, near-black ink, black pill buttons, orange used sparingly. */
 :root{
-  --bg:#ebeff0; --surface:#ffffff; --sunken:#f2f4f5; --line:#d8dde0; --ink:#0a0a0a; --muted:#5f6569;
+  --bg:#fa530b; --surface:#ffffff; --sunken:#f2f4f5; --line:#d8dde0; --ink:#0a0a0a; --muted:#5f6569;   /* page ground: QWIC orange */
   --accent:#0a0a0a; --accent-ink:#ffffff; --accent-soft:#e4e8ea; --brand:#fa530b;
   --in:#13733f; --in-soft:#dff0e6; --out:#fa530b; --out-soft:#feeadf; --danger:#b42318; --danger-soft:#fde7e5; --mkt:#6941c6; --mkt-soft:#efeafc; --tmp:#2f7d4f; --tmp-soft:#e4f2e9; --floor:#e1e6e8; --wall:#0a0a0a;
-  --shadow:0 1px 2px rgba(10,10,10,.05);
+  --shadow:0 1px 3px rgba(10,10,10,.12);
   --f-sans:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;   /* one typeface everywhere; numbers use tabular figures */
 }
@@ -225,7 +225,7 @@ td.dim{color:var(--muted)}
 .timeline .row1{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .drawer-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:8px;border-top:1px solid var(--line)}
 /* Toast */
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:11px 16px;border-radius:8px;font-size:14px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--surface);padding:11px 16px;border-radius:8px;font-size:14px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 .toast.in{background:var(--in);color:#fff}.toast.out{background:var(--out);color:#fff}.toast.err{background:var(--danger);color:#fff}
 @media (prefers-reduced-motion:no-preference){.toast{animation:pop .18s ease-out}@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}}}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
@@ -237,7 +237,7 @@ td.dim{color:var(--muted)}
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><div class="who" id="who"></div><select id="themeSel" class="themesel" aria-label="Colour theme"><option value="">Theme: automatic</option><option value="light">Theme: light</option><option value="dark">Theme: dark</option><option value="orange">Theme: orange</option></select><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
+    <div class="topbtns"><div class="who" id="who"></div><select id="themeSel" class="themesel" aria-label="Colour theme"><option value="">Theme: automatic</option><option value="light">Theme: light</option><option value="dark">Theme: dark</option></select><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -1084,7 +1084,7 @@ td.dim{color:var(--muted)}
   { const root=document.documentElement, hostTheme=root.getAttribute("data-theme"), sel=$("themeSel");
     const apply=v=>{ if (v) root.setAttribute("data-theme", v); else if (hostTheme) root.setAttribute("data-theme", hostTheme); else root.removeAttribute("data-theme"); };
     let v=""; try { v=localStorage.getItem("bw.theme")||""; } catch {}
-    if (!["","light","dark","orange"].includes(v)) v="";
+    if (v==="orange") v="light"; if (!["","light","dark"].includes(v)) v="";
     sel.value=v; apply(v);
     sel.addEventListener("change",()=>{ apply(sel.value); try { localStorage.setItem("bw.theme", sel.value); } catch {} }); }
   try { const t=localStorage.getItem("bw.tab"); if (t && ["stock","map","all","log","loc"].includes(t)) S.tab=t; } catch {}
