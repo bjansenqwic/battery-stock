@@ -30,7 +30,7 @@
   --f-sans:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;   /* one typeface everywhere; numbers use tabular figures */
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="orange"]){
   --bg:#0a0a0a; --surface:#161718; --sunken:#111213; --line:#2b2e30; --ink:#f2f4f5; --muted:#9aa1a6;
   --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b;
   --in:#4fcf8b; --in-soft:#13301f; --out:#ff6a2b; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
@@ -40,6 +40,7 @@
   --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b;
   --in:#4fcf8b; --in-soft:#13301f; --out:#ff6a2b; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
   --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
+:root[data-theme="orange"]{--bg:#fa530b; --floor:#fde3d6; --shadow:0 1px 3px rgba(10,10,10,.12); color-scheme:light}
 *{box-sizing:border-box}
 body,input,select,textarea,button{font-variant-numeric:tabular-nums}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:15px;line-height:1.45;
@@ -57,6 +58,9 @@ header.top .sub{color:rgba(255,255,255,.66)}
 header.top .who{color:rgba(255,255,255,.75)}
 header.top .btn.ghost{color:#ffffff;border-color:rgba(255,255,255,.4);background:transparent}
 header.top .btn.ghost:hover{border-color:#ffffff}
+header.top .themesel{width:auto;background:transparent;color:#ffffff;border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:8px 14px;font:600 14px var(--f-sans);cursor:pointer}
+header.top .themesel:hover{border-color:#ffffff}
+header.top .themesel option{color:#0a0a0a;background:#ffffff}
 @media (max-width:520px){header.top .brand{gap:12px}header.top .brand > div{padding-left:12px}header.top .logo{width:64px}h1{font-size:20px}}
 .who{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
 .who img{width:24px;height:24px;border-radius:50%}
@@ -91,7 +95,7 @@ header.top .btn.ghost:hover{border-color:#ffffff}
 .seg button[aria-pressed="true"].in{background:var(--in);color:#fff}
 .seg button[aria-pressed="true"].out{background:var(--out);color:#fff}
 :root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#0b1218}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{color:#0b1218}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="orange"]) .seg button[aria-pressed="true"]{color:#0b1218}}
 label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
 .field{display:flex;flex-direction:column}
 input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%;min-width:0}
@@ -233,7 +237,7 @@ td.dim{color:var(--muted)}
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><div class="who" id="who"></div><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
+    <div class="topbtns"><div class="who" id="who"></div><select id="themeSel" class="themesel" aria-label="Colour theme"><option value="">Theme: automatic</option><option value="light">Theme: light</option><option value="dark">Theme: dark</option><option value="orange">Theme: orange</option></select><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -1077,6 +1081,12 @@ td.dim{color:var(--muted)}
   $("settingsBtn").addEventListener("click",openSettings); $("setCancel").addEventListener("click",()=>{ $("setModal").hidden=true; }); $("setSave").addEventListener("click",saveSettings);
   fillSelects();
   { let m="auto"; try { const v=localStorage.getItem("bw.mode"); if (["auto","in","out"].includes(v)) m=v; } catch {} setMode(m); }
+  { const root=document.documentElement, hostTheme=root.getAttribute("data-theme"), sel=$("themeSel");
+    const apply=v=>{ if (v) root.setAttribute("data-theme", v); else if (hostTheme) root.setAttribute("data-theme", hostTheme); else root.removeAttribute("data-theme"); };
+    let v=""; try { v=localStorage.getItem("bw.theme")||""; } catch {}
+    if (!["","light","dark","orange"].includes(v)) v="";
+    sel.value=v; apply(v);
+    sel.addEventListener("change",()=>{ apply(sel.value); try { localStorage.setItem("bw.theme", sel.value); } catch {} }); }
   try { const t=localStorage.getItem("bw.tab"); if (t && ["stock","map","all","log","loc"].includes(t)) S.tab=t; } catch {}
   setTab(S.tab);
 
