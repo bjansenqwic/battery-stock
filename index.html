@@ -18,47 +18,59 @@
 <body>
 <title>Battery Stock</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: scan station (left, sticky) + stock ledger (right); stacks on phones, scan first */
+/* Layout: QWIC black bar on top, then scan station (left, sticky) + stock ledger (right); stacks on phones, scan first.
+   Look follows qwic.eu: light grey ground, near-black ink, black pill buttons, orange used sparingly. */
 :root{
-  --bg:#eef1f4; --surface:#ffffff; --sunken:#f5f7f9; --line:#d5dbe2; --ink:#14202c; --muted:#5b6876;
-  --accent:#0f5bd8; --accent-ink:#ffffff; --accent-soft:#e3ecfb;
-  --in:#127a46; --in-soft:#e1f3e9; --out:#9a5b00; --out-soft:#fbefd9; --danger:#b42318; --danger-soft:#fde7e5; --mkt:#6941c6; --mkt-soft:#efeafc; --tmp:#2f7d4f; --tmp-soft:#e4f2e9; --floor:#e4e8ec; --wall:#4a5562;
-  --shadow:0 1px 2px rgba(20,32,44,.06),0 4px 16px rgba(20,32,44,.06);
-  --f-sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bg:#ebeff0; --surface:#ffffff; --sunken:#f2f4f5; --line:#d8dde0; --ink:#0a0a0a; --muted:#5f6569;
+  --accent:#0a0a0a; --accent-ink:#ffffff; --accent-soft:#e4e8ea; --brand:#fa530b;
+  --in:#13733f; --in-soft:#dff0e6; --out:#c2410c; --out-soft:#fde6da; --danger:#b42318; --danger-soft:#fde7e5; --mkt:#6941c6; --mkt-soft:#efeafc; --tmp:#2f7d4f; --tmp-soft:#e4f2e9; --floor:#e1e6e8; --wall:#0a0a0a;
+  --shadow:0 1px 2px rgba(10,10,10,.05);
+  --f-sans:"Figtree",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#0f151b; --surface:#171f28; --sunken:#121920; --line:#2a3542; --ink:#e6ecf2; --muted:#93a1b0;
-  --accent:#5b9bff; --accent-ink:#071222; --accent-soft:#1a2a44;
-  --in:#4fcf8b; --in-soft:#143225; --out:#f0b45a; --out-soft:#352812; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#121a22; --wall:#5b6878;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}}
+  --bg:#0a0a0a; --surface:#161718; --sunken:#111213; --line:#2b2e30; --ink:#f2f4f5; --muted:#9aa1a6;
+  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b;
+  --in:#4fcf8b; --in-soft:#13301f; --out:#ff8a4c; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0f151b; --surface:#171f28; --sunken:#121920; --line:#2a3542; --ink:#e6ecf2; --muted:#93a1b0;
-  --accent:#5b9bff; --accent-ink:#071222; --accent-soft:#1a2a44;
-  --in:#4fcf8b; --in-soft:#143225; --out:#f0b45a; --out-soft:#352812; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#121a22; --wall:#5b6878;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.25); color-scheme:dark}
+  --bg:#0a0a0a; --surface:#161718; --sunken:#111213; --line:#2b2e30; --ink:#f2f4f5; --muted:#9aa1a6;
+  --accent:#f2f4f5; --accent-ink:#0a0a0a; --accent-soft:#232628; --brand:#ff6a2b;
+  --in:#4fcf8b; --in-soft:#13301f; --out:#ff8a4c; --out-soft:#3a1d0e; --danger:#ff7b6e; --danger-soft:#3a1916; --mkt:#b9a3f5; --mkt-soft:#2a2242; --tmp:#7fd3a0; --tmp-soft:#16301f; --floor:#0f1011; --wall:#3a3e41;
+  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:15px;line-height:1.45;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
 .wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-h1{font-size:24px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:14px 20px;flex-wrap:wrap;background:#0a0a0a;color:#ffffff;padding:18px 22px;border-radius:2px}
+#modelWrap[hidden] + .field{grid-column:1 / -1}
+header.top{border:1px solid var(--line)}
+header.top .brand{display:flex;align-items:center;gap:18px;min-width:0}
+header.top .logo{width:84px;height:auto;flex:none;color:#ffffff}
+header.top .brand > div{border-left:1px solid rgba(255,255,255,.22);padding-left:18px;min-width:0}
+h1{font-size:24px;font-weight:600;margin:0;letter-spacing:-.01em;text-wrap:balance}
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
+header.top .sub{color:rgba(255,255,255,.66)}
+header.top .who{color:rgba(255,255,255,.75)}
+header.top .btn.ghost{color:#ffffff;border-color:rgba(255,255,255,.4);background:transparent}
+header.top .btn.ghost:hover{border-color:#ffffff}
+@media (max-width:520px){header.top .brand{gap:12px}header.top .brand > div{padding-left:12px}header.top .logo{width:64px}h1{font-size:20px}}
 .who{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
 .who img{width:24px;height:24px;border-radius:50%}
 .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px 16px}
 .stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-.stat .v{font-family:var(--f-mono);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat .v{font-family:var(--f-sans);font-size:32px;font-weight:600;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;margin-top:2px}
 .stat.in .v{color:var(--in)} .stat.out .v{color:var(--out)}
 .main{display:grid;grid-template-columns:380px minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.main{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow);min-width:0}
 .scan{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);padding:16px;display:flex;flex-direction:column;gap:14px}
 @media (max-width:900px){.scan{position:static}}
-.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--sunken);border:1px solid var(--line);border-radius:10px;padding:4px;gap:4px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--sunken);border:1px solid var(--line);border-radius:999px;padding:4px;gap:4px}
+.seg button{border-radius:999px!important}
 .seg button{border:0;background:transparent;color:var(--muted);font:600 15px var(--f-sans);padding:10px;border-radius:7px;cursor:pointer}
 .seg button[aria-pressed="true"].auto{background:var(--accent);color:var(--accent-ink)}
 .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,16,22,.55)}
@@ -91,7 +103,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .iconbtn:hover{border-color:var(--accent)}
 .iconbtn svg{width:20px;height:20px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.btn{border:0;border-radius:9px;padding:13px 16px;font:600 16px var(--f-sans);cursor:pointer;background:var(--accent);color:var(--accent-ink)}
+.btn{border:0;border-radius:999px;padding:13px 16px;font:600 16px var(--f-sans);cursor:pointer;background:var(--accent);color:var(--accent-ink)}
 .btn.in{background:var(--in);color:#fff}.btn.out{background:var(--out);color:#fff}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);font-size:14px;padding:8px 12px}
@@ -176,7 +188,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .ledger{display:flex;flex-direction:column}
 .tabs{display:flex;gap:4px;padding:10px 12px 0;border-bottom:1px solid var(--line);overflow-x:auto}
 .tabs button{border:0;background:none;color:var(--muted);font:600 14px var(--f-sans);padding:10px 12px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
-.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--brand)}
 .tabs .count{font-family:var(--f-mono);font-weight:500;color:var(--muted);margin-left:4px}
 .toolbar{display:flex;gap:8px;padding:12px;flex-wrap:wrap;align-items:center}
 .toolbar input{flex:1 1 200px}
@@ -215,10 +227,10 @@ td.dim{color:var(--muted)}
 
 <div class="wrap">
   <header class="top">
-    <div>
+    <div class="brand"><svg class="logo" viewBox="0 0 200 51" role="img" aria-label="QWIC" xmlns="http://www.w3.org/2000/svg"><path d="M65.5945 50.3906H119.766C124.598 50.3906 128.497 46.4912 128.497 41.6596V0.170685H117.587V37.2875C117.587 38.4954 116.615 39.467 115.407 39.467H101.215V0.170685H90.304V39.467H73.9316V0.170685H63.0211V50.3775H65.6076L65.5945 50.3906Z" fill="currentColor"/><path d="M147.89 0H136.979V50.2068H147.89V0Z" fill="currentColor"/><path d="M167.255 13.2475C167.255 12.0396 168.227 11.0681 169.435 11.0681H200V0.144409H165.076C160.244 0.144409 156.345 4.05697 156.345 8.87545V41.6202C156.345 46.4518 160.244 50.3512 165.076 50.3512H200V39.4407H169.435C168.227 39.4407 167.255 38.4691 167.255 37.2612V13.2475Z" fill="currentColor"/><path d="M8.73104 0.118164C3.89942 0.118164 0 4.03072 0 8.84921V41.5939C0 46.4255 3.89942 50.325 8.73104 50.325H35.6857L24.7752 39.4144H13.1031C11.8952 39.4144 10.9236 38.4429 10.9236 37.235V13.2082C10.9236 12.0003 11.8952 11.0287 13.1031 11.0287H41.4888C42.6968 11.0287 43.6683 12.0003 43.6683 13.2082V33.585L54.5788 44.4955V8.84921C54.5788 4.01759 50.6663 0.118164 45.8478 0.118164H8.73104Z" fill="currentColor"/><path d="M26.2718 35.1474L39.9264 48.802C40.7798 49.6554 42.4604 50.3512 43.6683 50.3512H52.4256C53.6335 50.3512 53.9223 49.6554 53.0689 48.802L39.4144 35.1474C38.5609 34.294 36.8804 33.5981 35.6856 33.5981H26.9283C25.7204 33.5981 25.4316 34.294 26.285 35.1474" fill="#F47920"/></svg><div>
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
-    </div>
+    </div></div>
     <div class="topbtns"><div class="who" id="who"></div><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button></div>
   </header>
 
@@ -257,7 +269,7 @@ td.dim{color:var(--muted)}
       <div id="snStatus" class="status-card" hidden></div>
 
       <div class="grid2">
-        <div class="field">
+        <div class="field" id="modelWrap" hidden>
           <label for="model">Model / type</label>
           <select id="model"></select>
           <div class="hint" id="typeHint" style="margin-top:4px" hidden></div>
@@ -314,7 +326,7 @@ td.dim{color:var(--muted)}
       <button class="btn" id="submitBtn" type="submit">Check in / out</button>
       <div class="hint">Every field is required except Reference nr and Note.</div>
       <label class="check" id="instantWrap" for="instant"><input type="checkbox" id="instant" checked> Save immediately after scanning</label>
-      <div class="hint">Auto checks a battery out when it is in stock, and in when it is not. The fields start empty for every battery, so each one is filled in on purpose. The type is filled in from the serial number when it is recognised. When Auto checks a battery out, it keeps that battery's recorded status, purpose and in-box.</div>
+      <div class="hint">Auto checks a battery out when it is in stock, and in when it is not. The fields start empty for every battery, so each one is filled in on purpose. The type is set automatically from the serial number. When Auto checks a battery out, it keeps that battery's recorded status, purpose and in-box.</div>
     </form>
 
     <!-- Ledger -->
@@ -474,22 +486,36 @@ td.dim{color:var(--muted)}
   function fillSelect(sel, opts) { if (document.activeElement===sel) return; const v=sel.value; sel.replaceChildren(...opts.map(([val,txt])=>el("option",{value:val,text:txt}))); if (opts.some(o=>o[0]===v)) sel.value=v; }
   function fillSelects() {
     const names=S.cfg.types.map(t=>t.name);
-    fillSelect($("model"), [["", names.length ? "Choose type…" : "No types yet (add under Types & locations)"], ...names.map(n=>[n,n])]);
+    const pick = S.typeChoices && S.typeChoices.length ? S.typeChoices : names;
+    fillSelect($("model"), [["", names.length ? "Choose type…" : "No types yet (add under Types & locations)"], ...pick.map(n=>[n,n])]);
     fillSelect($("loc"), [["", S.cfg.locations.length ? "Choose a shelf…" : "No location"], ...locRows().map(l=>[l.name, l.name+(l.only ? " · "+ZONE_NAME[l.only] : "")+(l.cap ? ` (${l.used}/${l.cap})`+(l.used>=l.cap?" full":"") : ` (${l.used})`)+(l.used && !l.only?" · "+contentsOf(l):"")])]);
   }
+  // The type is set by the app: from the battery's record, the serial number or the label.
+  // Only when none of those tells the type is the (hidden) type field shown, limited to the possible types.
   function autofillType() {
-    const sn=norm($("sn").value), hint=$("typeHint"); hint.hidden=true; if (!sn) return;
+    const sn=norm($("sn").value);
+    S.typeChoices=null; S.typeNote="";
+    if (!sn) { S.typeSource=""; $("model").value=""; fillSelects(); refreshTypeField(); return; }
     const prev=S.bats.get(docId(sn)), det=detectType(sn), rule = det ? null : snRule(sn);
-    const inList = n => S.cfg.types.some(t=>norm(t.name)===norm(n));
-    const want=(prev && prev.model) || det || (rule && rule.types.length===1 ? rule.types[0] : "");
-    if (want && !(prev && prev.model) && !inList(want)) { hint.hidden=false; hint.textContent = `The serial number points to type ${want}, which is not in your type list. Add it under Types & locations.`; return; }
-    if (!want) {
-      if (rule && rule.types.length > 1) { hint.hidden=false; hint.textContent = `This serial number belongs to ${rule.label}: one of ${rule.types.join(", ")}. The serial number alone doesn't say which, so choose the type (see the Art # on the label).`; }
-      return;
-    }
-    if (![...$("model").options].some(o=>o.value===want)) return;
-    $("model").value=want; hint.hidden=false;
-    hint.textContent = prev && prev.model ? "Type taken from this battery's record. You can change it." : "Type recognised from the serial number. You can change it.";
+    const names=S.cfg.types.map(t=>t.name), inList = n => names.some(x=>norm(x)===norm(n));
+    let want="", src="";
+    if (prev && prev.model && inList(prev.model)) { want=prev.model; src="record"; }
+    else if (det) { want=det; src="sn"; }
+    else if (rule && rule.types.length===1) { want=rule.types[0]; src="sn"; }
+    if (want && !inList(want)) { S.typeNote=`The serial number points to type ${want}, which is not in your type list. Add it under Types & locations, or choose the type below.`; want=""; }
+    if (!want && rule && rule.types.length>1) { S.typeChoices=rule.types.filter(inList); S.typeNote=`This serial number belongs to ${rule.label}, but doesn't say which type. Choose the type from the Art # on the label.`; }
+    const kept = !want && ["chosen","label"].includes(S.typeSource) && $("model").value && (!S.typeChoices || S.typeChoices.includes($("model").value)) ? $("model").value : "";
+    S.typeSource = want ? src : kept ? S.typeSource : "";
+    fillSelects();
+    $("model").value = want || kept;
+    refreshTypeField();
+  }
+  function refreshTypeField() {
+    const sn=norm($("sn").value), prev=sn ? S.bats.get(docId(sn)) : null, lock = sn && dirFor(sn)==="out" && !!prev;
+    const auto = ["sn","record","label"].includes(S.typeSource) && !!$("model").value;
+    $("modelWrap").hidden = !sn || lock || auto;
+    const hint=$("typeHint"); hint.hidden = $("modelWrap").hidden;
+    hint.textContent = S.typeNote || "The type can't be read from this serial number. Choose it from the Art # on the label.";
   }
   const parseLines = txt => txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{ const i=l.indexOf("="); return i<0 ? [l,""] : [l.slice(0,i).trim(), l.slice(i+1).trim()]; }).filter(x=>x[0]);
   function openSettings() {
@@ -557,7 +583,10 @@ td.dim{color:var(--muted)}
   function applyLock() {
     const sn = norm($("sn").value), prev = sn ? S.bats.get(docId(sn)) : null, t = sn ? dirFor(sn) : (S.mode==="out" ? "out" : "in");
     const lock = t==="out" && !!prev;
-    for (const id of ["model","cond","purpose","inBox"]) $(id).closest(".field").hidden = lock;
+    for (const id of ["cond","purpose","inBox"]) $(id).closest(".field").hidden = lock;
+    refreshTypeField();
+    if (sn && !lock && $("model").value && ["sn","record","label"].includes(S.typeSource))
+      $("snStatus").append(el("div",{class:"hint",style:"margin-top:6px",text:`Type: ${$("model").value} (${S.typeSource==="record" ? "from this battery's record" : S.typeSource==="label" ? "read from the label" : "from the serial number"})`}));
     const ref = $("ref");
     if (lock) {
       if (!ref.readOnly) S.refDraft = ref.value;           // keep what was typed for the next check-in
@@ -566,7 +595,6 @@ td.dim{color:var(--muted)}
       ref.readOnly = false; ref.value = S.refDraft || ""; ref.placeholder = "Order, RMA or ticket nr";
     }
     if (lock) {
-      $("typeHint").hidden = true;
       const box = $("snStatus");
       box.append(el("div",{class:"hint",style:"margin-top:6px",text:
         "Leaves as: " + [prev.model || "no type", prev.condition || "no status", prev.purpose ? "for " + prev.purpose : "", prev.inBox ? "in box: " + boxTxt(prev.inBox) : ""].filter(Boolean).join(" · ")}));
@@ -605,7 +633,7 @@ td.dim{color:var(--muted)}
     const prevB = S.bats.get(docId(sn)), lockOut = t==="out" && !!prevB, typeNow = lockOut ? "locked" : $("model").value;
     // every field is required except Reference nr and Note; a known battery checking out only needs a reason
     const need = lockOut ? [["reasonOut","a reason"]]
-      : [["model", prevB && prevB.model && typeNow==="" ? `the battery type (${prevB.model} is no longer in the type list)` : "the battery type"], ["cond","the battery status"], ["purpose","what the battery is for"], ["inBox","whether the battery is in a box"], [t==="in" ? "reasonIn" : "reasonOut","a reason"]];
+      : [["model", "the battery type: it can't be read from this serial number, so pick it from the Art # on the label"], ["cond","the battery status"], ["purpose","what the battery is for"], ["inBox","whether the battery is in a box"], [t==="in" ? "reasonIn" : "reasonOut","a reason"]];
     for (const [id, what] of need) if (!$(id).value) { $(id).classList.add("missing"); toast(`Choose ${what}.`, "err"); $(id).scrollIntoView({block:"center", behavior:"smooth"}); $(id).focus({preventScroll:true}); return; }
     { const r = $(t==="in" ? "reasonIn" : "reasonOut").value; if (r==="Other" && !$("reasonOther").value.trim()) { $("reasonOther").classList.add("missing"); toast("Describe the reason.", "err"); $("reasonOther").focus(); return; } }
     if (t==="in" && !$("loc").value) {
@@ -643,7 +671,7 @@ td.dim{color:var(--muted)}
       toast(`${sn} ${t==="in"?"checked in":"checked out"}${t==="in"&&loc?" → "+loc:""}` + (L && L.cap && usedNow>L.cap ? `. ${loc} is over its maximum (${usedNow}/${L.cap}).` : "") + (mixes ? ". " + mixes : ""), (L && L.cap && usedNow>L.cap) || mixes ? "err" : t, () => before ? ref0.set(before) : ref0.delete());
       $("sn").value=""; $("note").value="";
       for (const id of ["model","cond","purpose","inBox","reasonIn","reasonOut"]) $(id).value = "";
-      $("reasonOther").value = ""; S.refDraft = ""; if (!$("ref").readOnly) $("ref").value = ""; onReason(); $("snStatus").hidden=true; $("typeHint").hidden=true; $("shelfPick").hidden=true; hideSuggest();
+      $("reasonOther").value = ""; S.refDraft = ""; S.typeSource = ""; S.typeChoices = null; S.typeNote = ""; fillSelects(); if (!$("ref").readOnly) $("ref").value = ""; onReason(); $("snStatus").hidden=true; $("typeHint").hidden=true; $("shelfPick").hidden=true; hideSuggest();
       if (S.cfg.locations.length) $("loc").value="";
       updateSnStatus();   // the form is empty again: show all fields and the neutral button
       $("sn").focus();
@@ -804,10 +832,10 @@ td.dim{color:var(--muted)}
         else if (text && ai.sn && ai.sn !== text) note = ` The printed number reads ${ai.sn}; the barcode was used.`;
         if (ai.art && !typeCode) { if (types.has(ai.art)) typeCode = ai.art; else note += ` Type ${ai.art} on the label is not in your type list. Add it under Types & locations.`; }
       }
-      if (typeCode) setType(typeCode);
+      if (typeCode) { S.typeChoices = null; fillSelects(); setType(typeCode); }
       if (text) {
         $("sn").value = text; hideSuggest();
-        if (!typeCode) autofillType(); else { $("typeHint").hidden = false; $("typeHint").textContent = "Type read from the label. You can change it."; }
+        if (!typeCode) autofillType(); else { S.typeChoices = null; S.typeNote = ""; S.typeSource = "label"; }
         updateSnStatus();
         if (source === "barcode") {
           $("camHint").textContent = `Barcode read: ${text}${typeCode ? `, type ${typeCode}` : ""}.${note}`;
@@ -1029,7 +1057,7 @@ td.dim{color:var(--muted)}
   $("instant").addEventListener("change",()=>{ try { localStorage.setItem("bw.instant", $("instant").checked?"1":"0"); } catch {} });
   $("sn").addEventListener("input",()=>{ autofillType(); updateSnStatus(); renderSuggest(); });
   $("sn").addEventListener("blur",()=>setTimeout(hideSuggest,120)); $("sn").addEventListener("focus",renderSuggest);
-  $("model").addEventListener("change",updateSnStatus); $("cond").addEventListener("change",updateSnStatus); $("purpose").addEventListener("change",updateSnStatus);
+  $("model").addEventListener("change",()=>{ S.typeSource = $("modelWrap").hidden ? "label" : "chosen"; updateSnStatus(); });   /* hidden field: set by a scanned type barcode */ $("cond").addEventListener("change",updateSnStatus); $("purpose").addEventListener("change",updateSnStatus);
   $("genBtn").addEventListener("click",generateShelves);
     $("sn").addEventListener("keydown",e=>{
     if (e.key==="ArrowDown" && !$("snSuggest").hidden) { e.preventDefault(); moveSuggest(1); return; }
