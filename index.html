@@ -57,7 +57,13 @@ h1{font-size:24px;font-weight:600;margin:0;letter-spacing:-.01em;text-wrap:balan
 .sub{color:var(--muted);font-size:13px;margin:2px 0 0}
 header.top .sub{color:var(--hdr-sub)}
 header.top{position:relative;padding-right:78px}
-header.top .topbtns{flex:1 1 100%}   /* Dark mode and Types & locations always on their own row, bottom left */
+header.top .topbtns{flex:1 1 100%}   /* Dark mode and the settings icon always on their own row, bottom left */
+.setwrap{position:relative}
+.gearbtn{width:38px;height:38px;border-radius:50%;border:1px solid var(--hdr-ink);background:transparent;color:var(--hdr-ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.gearbtn svg{width:20px;height:20px}
+.setmenu{position:absolute;left:0;top:calc(100% + 6px);z-index:45;background:var(--surface);border:1px solid var(--edge);border-radius:8px;padding:4px;min-width:200px;display:flex;flex-direction:column;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.setmenu button{border:0;background:transparent;color:var(--ink);text-align:left;font:600 14px var(--f-sans);padding:10px 12px;border-radius:6px;cursor:pointer}
+.setmenu button:hover,.setmenu button:focus-visible{background:var(--sunken)}
 header.top .who{position:absolute;top:16px;right:18px}   /* the signed-in person: pinned to the top-right corner */
 .avatar{width:38px;height:38px;border-radius:50%;background:#fa530b;color:#ffffff;border:2px solid #ffffff;display:inline-flex;align-items:center;justify-content:center;font:700 15px var(--f-sans);letter-spacing:.02em;flex:none;cursor:default;user-select:none}
 header.top .btn.ghost{color:var(--hdr-ink);border-color:var(--hdr-ink);background:transparent}
@@ -245,7 +251,7 @@ td.dim{color:var(--muted)}
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><button class="btn ghost" id="settingsBtn" type="button">Types &amp; locations</button><div class="who" id="who"></div></div>
+    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuLocs">Storage locations</button></div></div><div class="who" id="who"></div></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -374,13 +380,13 @@ td.dim{color:var(--muted)}
 <aside class="drawer" id="drawer" hidden aria-label="Battery details"></aside>
 <div class="modal" id="setModal" hidden>
   <div class="box">
-    <h2>Battery types and storage locations</h2>
-    <div class="field">
+    <h2 id="setTitle">Battery types</h2>
+    <div class="field" id="secTypes">
       <label for="setTypes">Battery types, one per line</label>
       <textarea id="setTypes" spellcheck="false" placeholder="522Wh = QB52, QB5X&#10;735Wh = QB73"></textarea>
       <div class="hint" style="margin-top:4px">Write the type name, then = and the characters the serial number starts with. Separate several codes with commas. Put * in front of a code if it can sit anywhere in the serial number. A type without codes is only in the list.</div>
     </div>
-    <div class="field">
+    <div class="field" id="secLocs">
       <label>Create shelves</label>
       <div class="gen">
         <div class="field"><label for="genSides">Sides</label><input id="genSides" type="number" min="1" max="20" value="3"></div>
@@ -501,7 +507,7 @@ td.dim{color:var(--muted)}
   function fillSelects() {
     const names=S.cfg.types.map(t=>t.name);
     const pick = S.typeChoices && S.typeChoices.length ? S.typeChoices : names;
-    fillSelect($("model"), [["", names.length ? "Choose type…" : "No types yet (add under Types & locations)"], ...pick.map(n=>[n,n])]);
+    fillSelect($("model"), [["", names.length ? "Choose type…" : "No types yet (add under Settings)"], ...pick.map(n=>[n,n])]);
     fillSelect($("loc"), [["", S.cfg.locations.length ? "Choose a shelf…" : "No location"], ...locRows().map(l=>[l.name, l.name+(l.only ? " · "+ZONE_NAME[l.only] : "")+(l.cap ? ` (${l.used}/${l.cap})`+(l.used>=l.cap?" full":"") : ` (${l.used})`)+(l.used && !l.only?" · "+contentsOf(l):"")])]);
   }
   // The type is set by the app: from the battery's record, the serial number or the label.
@@ -516,7 +522,7 @@ td.dim{color:var(--muted)}
     if (prev && prev.model && inList(prev.model)) { want=prev.model; src="record"; }
     else if (det) { want=det; src="sn"; }
     else if (rule && rule.types.length===1) { want=rule.types[0]; src="sn"; }
-    if (want && !inList(want)) { S.typeNote=`The serial number points to type ${want}, which is not in your type list. Add it under Types & locations, or choose the type below.`; want=""; }
+    if (want && !inList(want)) { S.typeNote=`The serial number points to type ${want}, which is not in your type list. Add it under Settings, or choose the type below.`; want=""; }
     if (!want && rule && rule.types.length>1) { S.typeChoices=rule.types.filter(inList); S.typeNote=`This serial number belongs to ${rule.label}, but doesn't say which type. Choose the type from the Art # on the label.`; }
     const kept = !want && ["chosen","label"].includes(S.typeSource) && $("model").value && (!S.typeChoices || S.typeChoices.includes($("model").value)) ? $("model").value : "";
     S.typeSource = want ? src : kept ? S.typeSource : "";
@@ -532,10 +538,13 @@ td.dim{color:var(--muted)}
     hint.textContent = S.typeNote || "The type can't be read from this serial number. Choose it from the Art # on the label.";
   }
   const parseLines = txt => txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>{ const i=l.indexOf("="); return i<0 ? [l,""] : [l.slice(0,i).trim(), l.slice(i+1).trim()]; }).filter(x=>x[0]);
-  function openSettings() {
+  function openSettings(which) {
+    if (!S.isAdmin) { toast("Only admins can change types and locations.","err"); return; }
     $("setTypes").value = S.cfg.types.map(t=>t.name+(t.codes&&t.codes.length?" = "+t.codes.join(", "):"")).join("\n");
     const RULE = { defect: "for Defect", marketing: "for Marketing", any: "for anything" };
     $("setLocs").value = S.cfg.locations.map(l => { const parts = [l.cap ? String(l.cap) : "", l.only ? RULE[l.only] : ""].filter(Boolean); return l.name + (parts.length ? " = " + parts.join(", ") : ""); }).join("\n");
+    $("secTypes").hidden = which!=="types"; $("secLocs").hidden = which!=="locs";
+    $("setTitle").textContent = which==="types" ? "Battery types" : "Storage locations";
     $("setModal").hidden=false;
   }
   function generateShelves() {
@@ -546,6 +555,7 @@ td.dim{color:var(--muted)}
     $("setLocs").value=lines.join("\n"); toast(lines.length+" shelves listed. Press Save to keep them.");
   }
   async function saveSettings() {
+    if (!S.isAdmin) { toast("Only admins can change types and locations.","err"); return; }
     if (!S.db) { toast("The Excel file isn't connected yet.","err"); return; }
     const types=parseLines($("setTypes").value).map(([n,c])=>({name:n, codes:c.split(",").map(x=>x.trim().toUpperCase()).filter(Boolean)}));
     const locations=parseLines($("setLocs").value).map(([n,c])=>{ const num=c.match(/\d+/), rule=(c.match(/for\s+(defect|broken|marketing|anything|any)/i)||[])[1];
@@ -586,7 +596,7 @@ td.dim{color:var(--muted)}
     const special = list.length && list.every(r => r.only && r.only !== "any");
     box.replaceChildren(el("div",{class:"head",text: special ? `Recommended: the ${ZONE_NAME[zone]} area` : `Recommended spots for ${type||"this battery"} · ${cond}`}));
     if (!type && !special) box.append(el("div",{class:"hint",text:"Choose the type above to see the spots for that type."}));
-    if (!list.length) { box.append(el("div",{class:"hint",text:"No spot has room for this type and status. Choose one from the list below, or add spots under Types & locations."})); return; }
+    if (!list.length) { box.append(el("div",{class:"hint",text:"No spot has room for this type and status. Choose one from the list below, or add spots under Settings."})); return; }
     box.append(el("div",{class:"chips"}, ...list.slice(0,8).map((r,i)=>el("button",{type:"button",class:"chip"+(i===0?" best":"")+(r.only?" zone":""),title:"Check in at "+r.name,
       onclick:()=>{ $("loc").value=r.name; $("scanForm").requestSubmit(); }},
       r.name, el("small",{text:(i===0?"Best · ":"")+(r.only ? ZONE_NAME[r.only]+" · "+r.used+(r.cap?"/"+r.cap:"") : (r.cap?`${r.used}/${r.cap}`:`${r.used}`)+(r.used?"":" · empty"))})))),
@@ -651,7 +661,7 @@ td.dim{color:var(--muted)}
     for (const [id, what] of need) if (!$(id).value) { $(id).classList.add("missing"); toast(`Choose ${what}.`, "err"); $(id).scrollIntoView({block:"center", behavior:"smooth"}); $(id).focus({preventScroll:true}); return; }
     { const r = $(t==="in" ? "reasonIn" : "reasonOut").value; if (r==="Other" && !$("reasonOther").value.trim()) { $("reasonOther").classList.add("missing"); toast("Describe the reason.", "err"); $("reasonOther").focus(); return; } }
     if (t==="in" && !$("loc").value) {
-      if (!S.cfg.locations.length) { toast("Add your shelves under Types & locations before checking batteries in.", "err"); return; }
+      if (!S.cfg.locations.length) { toast("Add your shelves under Settings before checking batteries in.", "err"); return; }
       const c=document.querySelector("#shelfPick .chip"); toast(c ? "Tap a shelf to check this battery in." : "Choose a storage location.", c ? "" : "err"); $("locWrap").scrollIntoView({block:"center", behavior:"smooth"}); if (c) c.focus({preventScroll:true}); else $("loc").focus({preventScroll:true}); return;
     }
     const rsel = $(t==="in" ? "reasonIn" : "reasonOut").value;
@@ -844,7 +854,7 @@ td.dim{color:var(--muted)}
       if (ai) {
         if (!text && ai.sn) { text = ai.sn; source = ai.unsure ? "unsure" : "text"; }
         else if (text && ai.sn && ai.sn !== text) note = ` The printed number reads ${ai.sn}; the barcode was used.`;
-        if (ai.art && !typeCode) { if (types.has(ai.art)) typeCode = ai.art; else note += ` Type ${ai.art} on the label is not in your type list. Add it under Types & locations.`; }
+        if (ai.art && !typeCode) { if (types.has(ai.art)) typeCode = ai.art; else note += ` Type ${ai.art} on the label is not in your type list. Add it under Settings.`; }
       }
       if (typeCode) { S.typeChoices = null; fillSelects(); setType(typeCode); }
       if (text) {
@@ -928,7 +938,7 @@ td.dim{color:var(--muted)}
     if (!S.loaded) { es.hidden=false; es.replaceChildren(el("strong",{text:"Loading stock…"}), "Batteries will appear here as soon as the shared list loads."); }
     else if (!rows.length) {
       es.hidden=false;
-      if (S.tab==="loc") es.replaceChildren(el("strong",{text:"No locations yet"}), "Add your shelves and their maximum under Types & locations.");
+      if (S.tab==="loc") es.replaceChildren(el("strong",{text:"No locations yet"}), "Add your shelves and their maximum under Settings.");
       else if (!S.bats.size) es.replaceChildren(el("strong",{text:"No batteries yet"}), "Scan or type a serial number on the left and press Check in to add the first one.");
       else if ($("q").value.trim()) es.replaceChildren(el("strong",{text:"No matches"}), "Nothing matches your search. Try part of the S/N.");
       else es.replaceChildren(el("strong",{text: S.tab==="stock"?"Nothing in stock":"Nothing to show"}), S.tab==="stock"?"Every known battery is checked out.":"Try a different filter.");
@@ -941,7 +951,7 @@ td.dim{color:var(--muted)}
   // S3 along the bottom. Several levels at one position are drawn as a stack, top level first.
   function renderMap() {
     const box = $("mapView");
-    if (!S.cfg.locations.length) { box.replaceChildren(el("div",{class:"empty"}, el("strong",{text:"No locations yet"}), "Add your spots under Types & locations to see the map.")); return; }
+    if (!S.cfg.locations.length) { box.replaceChildren(el("div",{class:"empty"}, el("strong",{text:"No locations yet"}), "Add your spots under Settings to see the map.")); return; }
     const rows = locRows();
     // spots to highlight for the battery in the scan form
     const sn = norm($("sn").value), cur = sn ? S.bats.get(docId(sn)) : null, t = sn ? dirFor(sn) : null;
@@ -1007,7 +1017,7 @@ td.dim{color:var(--muted)}
     const actions = el("div",{class:"drawer-actions"},
       el("button",{class:"btn ghost",type:"button",text:"Use in scan form",onclick:()=>{ $("sn").value=b.sn; closeDrawer(); autofillType(); updateSnStatus(); $("sn").focus(); }}),
       el("button",{class:"btn ghost",type:"button",text:"Close",onclick:closeDrawer}));
-    if (S.canEdit) {
+    if (S.isAdmin) {   // only admins may delete a battery record
       if (!confirming) actions.append(el("button",{class:"btn danger",type:"button",text:"Delete record",onclick:()=>renderDrawer(true)}));
       else actions.append(el("div",{class:"confirm"}, "Delete "+b.sn+" and its history?",
         el("button",{class:"btn danger",type:"button",text:"Yes, delete",onclick:async()=>{ try{ await S.db.collection("batteries").doc(S.openId).delete(); toast(b.sn+" deleted"); closeDrawer(); }catch{ toast("Couldn't delete. Try again.","err"); } }}),
@@ -1086,7 +1096,13 @@ td.dim{color:var(--muted)}
 
   $("cond").replaceChildren(choose(), ...CONDITIONS.map(c=>el("option",{value:c,text:c})));
   $("purpose").replaceChildren(choose(), ...PURPOSES.map(c=>el("option",{value:c,text:c})));
-  $("settingsBtn").addEventListener("click",openSettings); $("setCancel").addEventListener("click",()=>{ $("setModal").hidden=true; }); $("setSave").addEventListener("click",saveSettings);
+  { const menu=$("setMenu"), gear=$("settingsBtn"), shut=()=>{ menu.hidden=true; gear.setAttribute("aria-expanded","false"); };
+    gear.addEventListener("click",e=>{ e.stopPropagation(); menu.hidden=!menu.hidden; gear.setAttribute("aria-expanded",String(!menu.hidden)); });
+    document.addEventListener("click",e=>{ if (!$("setWrap").contains(e.target)) shut(); });
+    document.addEventListener("keydown",e=>{ if (e.key==="Escape") shut(); });
+    $("setMenuTypes").addEventListener("click",()=>{ shut(); openSettings("types"); });
+    $("setMenuLocs").addEventListener("click",()=>{ shut(); openSettings("locs"); }); }
+   $("setCancel").addEventListener("click",()=>{ $("setModal").hidden=true; }); $("setSave").addEventListener("click",saveSettings);
   fillSelects();
   { let m="auto"; try { const v=localStorage.getItem("bw.mode"); if (["auto","in","out"].includes(v)) m=v; } catch {} setMode(m); }
   { // dark-mode switch; without a saved choice the device setting decides
@@ -1105,7 +1121,7 @@ td.dim{color:var(--muted)}
     const [db, user, downloads, sample] = await Promise.all([claude.use("db"), claude.use("user"), claude.use("downloads"), claude.use("sample")]);
     S.downloads = downloads; S.user = user; S.sample = sample;
     if (user) {
-      S.me = await user.me(); S.canEdit = S.me.canEdit; S.canWrite = await user.can("data.write");
+      S.me = await user.me(); S.canEdit = S.me.canEdit; S.isAdmin = !!S.me.isOwner; $("setWrap").hidden = !S.isAdmin; S.canWrite = await user.can("data.write");
       if (S.canWrite === false) { banner("You have view-only access: you can look up batteries but not check them in or out."); $("submitBtn").disabled = true; }
       if (S.me.id) { { const nm=S.me.name||"You", ini=nm.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?"; $("who").replaceChildren(el("span",{class:"avatar",text:ini,title:"Signed in: "+nm,"aria-label":"Signed in: "+nm,role:"img"})); } S.profiles[S.me.id] = { name: S.me.name }; }
     }
