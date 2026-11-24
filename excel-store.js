@@ -16,7 +16,7 @@
 (() => {
   "use strict";
   const CFG = Object.assign({ clientId: "", tenantId: "", workbookUrl: "" }, window.BATTERY_CONFIG || {});
-  const DEMO = !CFG.clientId || !CFG.workbookUrl;
+  const DEMO = !CFG.clientId || !CFG.workbookUrl || /[?&]demo\b/.test(location.search);   // add ?demo to the address to try the app without signing in
   const TABLE = { mov: "Movements", types: "Types", locs: "Locations" };
   const COLS = [["Date", "date"], ["Movement", "mv"], ["Serial number", "sn"], ["Type", "model"], ["Battery status", "condition"],
     ["Battery is for", "purpose"], ["In box", "inBox"], ["Location", "loc"], ["Reason", "reason"], ["Reference nr", "ref"],
