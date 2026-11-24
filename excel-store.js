@@ -320,7 +320,7 @@
     return m;
   }
   function closeCam() { const m = document.getElementById("liveCam"); if (m) m.hidden = true; try { if (reader) reader.reset(); } catch {} reader = null; }
-  const loadZX = () => window.ZXing ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement("script"); s.src = "lib/zxing.min.js"; s.onload = res; s.onerror = rej; document.head.append(s); });
+  const loadZX = () => window.ZXing ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement("script"); s.src = "zxing.min.js"; s.onload = res; s.onerror = rej; document.head.append(s); });
   async function openCam() {
     const m = camModal(), msg = m.querySelector("#liveMsg"); m.hidden = false; msg.textContent = "Starting camera…";
     try {
