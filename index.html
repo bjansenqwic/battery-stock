@@ -419,6 +419,19 @@ td.dim{color:var(--muted)}
     }
     return best;
   }
+  // QWIC serial number rules (Confluence: "Identifying serial numbers").
+  // BA-numbers carry the type: BA092…, BA92… and BA0920… all mean BA00092. WDHL/XWHL/BDLG numbers only narrow it down.
+  const SN_FAMILIES = [
+    { re: /^(WDHL|XWHL)12/, types: ["BA00034","BA00035","BA00065","BA00070","BA00075","BA00080"], label: "a Premium (front motor) or older mid-motor battery" },
+    { re: /^(WDHL|XWHL)20/, types: ["BA00040","BA00045"], label: "a Trend battery" },
+    { re: /^(WDHL|XWHL)/, types: ["BA00034","BA00035","BA00040","BA00045","BA00055","BA00060","BA00065","BA00070","BA00075","BA00080"], label: "an older WDHL/XWHL battery" },
+    { re: /^BDLG/, types: ["BA00041"], label: "a Trend battery" },
+  ];
+  function snRule(sn) {
+    const m = sn.match(/^BA(\d+)/);
+    if (m) { const d = m[1].length >= 3 ? m[1].slice(0,3) : m[1].padStart(3,"0"); return { types: ["BA00"+d] }; }
+    const f = SN_FAMILIES.find(x => x.re.test(sn)); return f ? { types: f.types, label: f.label } : null;
+  }
   function occupancy() { const m=new Map(); for (const b of S.bats.values()) if (b.status==="in" && b.location) m.set(b.location,(m.get(b.location)||0)+1); return m; }
   const natural = (a,b) => a.localeCompare(b, undefined, {numeric:true, sensitivity:"base"});
   // What sits on each shelf now: count, types, statuses. exceptSn leaves out the battery being scanned.
@@ -465,10 +478,12 @@ td.dim{color:var(--muted)}
   }
   function autofillType() {
     const sn=norm($("sn").value), hint=$("typeHint"); hint.hidden=true; if (!sn) return;
-    const prev=S.bats.get(docId(sn)), det=detectType(sn), want=(prev && prev.model) || det;
+    const prev=S.bats.get(docId(sn)), det=detectType(sn), rule = det ? null : snRule(sn);
+    const inList = n => S.cfg.types.some(t=>norm(t.name)===norm(n));
+    const want=(prev && prev.model) || det || (rule && rule.types.length===1 ? rule.types[0] : "");
+    if (want && !(prev && prev.model) && !inList(want)) { hint.hidden=false; hint.textContent = `The serial number points to type ${want}, which is not in your type list. Add it under Types & locations.`; return; }
     if (!want) {
-      const m = sn.match(/^BA(\d{3})/), guess = m ? "BA00" + m[1] : "";
-      if (guess && !S.cfg.types.some(t=>norm(t.name)===guess)) { hint.hidden=false; hint.textContent = `The serial number points to type ${guess}, which is not in your type list. Add it under Types & locations.`; }
+      if (rule && rule.types.length > 1) { hint.hidden=false; hint.textContent = `This serial number belongs to ${rule.label}: one of ${rule.types.join(", ")}. The serial number alone doesn't say which, so choose the type (see the Art # on the label).`; }
       return;
     }
     if (![...$("model").options].some(o=>o.value===want)) return;
