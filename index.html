@@ -117,6 +117,7 @@ input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid v
 .chip small{font:500 11px var(--f-sans);color:var(--muted)}
 .chip:hover{border-color:var(--in)}
 .chip.best{border-color:var(--in);box-shadow:inset 0 0 0 1px var(--in)}
+.missing{border-color:var(--danger)!important;box-shadow:0 0 0 1px var(--danger)}
 .sublabel{text-transform:none;letter-spacing:0;font-weight:500;font-size:12px}
 .chip.zone{font-family:var(--f-sans)}
 .mapwrap{overflow-x:auto;padding:12px}
@@ -274,7 +275,7 @@ td.dim{color:var(--muted)}
         </div>
         <div class="field">
           <label for="inBox">In box</label>
-          <select id="inBox"><option value="yes">Yes</option><option value="no">No</option></select>
+          <select id="inBox"><option value="">Choose…</option><option value="yes">Yes</option><option value="no">No</option></select>
         </div>
       </div>
 
@@ -313,7 +314,7 @@ td.dim{color:var(--muted)}
       <button class="btn" id="submitBtn" type="submit">Check in / out</button>
       <div class="hint">Every field is required except Reference nr and Note.</div>
       <label class="check" id="instantWrap" for="instant"><input type="checkbox" id="instant" checked> Save immediately after scanning</label>
-      <div class="hint">Auto checks a battery out when it is in stock, and in when it is not. The fields above stay filled in for the next scan. The type is filled in from the serial number when it is recognised. When Auto checks a battery out, it keeps that battery's recorded status, purpose and in-box.</div>
+      <div class="hint">Auto checks a battery out when it is in stock, and in when it is not. The fields start empty for every battery, so each one is filled in on purpose. The type is filled in from the serial number when it is recognised. When Auto checks a battery out, it keeps that battery's recorded status, purpose and in-box.</div>
     </form>
 
     <!-- Ledger -->
@@ -541,6 +542,7 @@ td.dim{color:var(--muted)}
     const type=$("model").value, cond=$("cond").value, purpose=$("purpose").value, list=suggestShelves(sn,type,cond,purpose), zone=zoneFor(cond,purpose);
     const key=[sn,type,cond,purpose,...list.slice(0,9).map(r=>r.name+":"+r.used)].join("|");
     box.hidden=false; if (box.dataset.key===key) return; box.dataset.key=key;
+    if (!type || !cond || !purpose) { box.replaceChildren(el("div",{class:"head",text:"Recommended spots"}), el("div",{class:"hint",text:"Choose the type, the battery status and what the battery is for first. The best spots then appear here."})); return; }
     const special = list.length && list.every(r => r.only && r.only !== "any");
     box.replaceChildren(el("div",{class:"head",text: special ? `Recommended: the ${ZONE_NAME[zone]} area` : `Recommended spots for ${type||"this battery"} · ${cond}`}));
     if (!type && !special) box.append(el("div",{class:"hint",text:"Choose the type above to see the spots for that type."}));
@@ -601,14 +603,15 @@ td.dim{color:var(--muted)}
     if (S.mode==="auto" && !S.loaded) { toast("The stock list is still loading. Try again in a moment.", "err"); return; }
     const t = dirFor(sn);
     const prevB = S.bats.get(docId(sn)), lockOut = t==="out" && !!prevB, typeNow = lockOut ? "locked" : $("model").value;
-    if (!typeNow) { toast(prevB && prevB.model ? `${prevB.model} is no longer in the type list. Choose the battery type.` : "Choose the battery type.", "err"); $("model").focus(); return; }
+    // every field is required except Reference nr and Note; a known battery checking out only needs a reason
+    const need = lockOut ? [["reasonOut","a reason"]]
+      : [["model", prevB && prevB.model && typeNow==="" ? `the battery type (${prevB.model} is no longer in the type list)` : "the battery type"], ["cond","the battery status"], ["purpose","what the battery is for"], ["inBox","whether the battery is in a box"], [t==="in" ? "reasonIn" : "reasonOut","a reason"]];
+    for (const [id, what] of need) if (!$(id).value) { $(id).classList.add("missing"); toast(`Choose ${what}.`, "err"); $(id).scrollIntoView({block:"center", behavior:"smooth"}); $(id).focus({preventScroll:true}); return; }
+    { const r = $(t==="in" ? "reasonIn" : "reasonOut").value; if (r==="Other" && !$("reasonOther").value.trim()) { $("reasonOther").classList.add("missing"); toast("Describe the reason.", "err"); $("reasonOther").focus(); return; } }
     if (t==="in" && !$("loc").value) {
       if (!S.cfg.locations.length) { toast("Add your shelves under Types & locations before checking batteries in.", "err"); return; }
       const c=document.querySelector("#shelfPick .chip"); toast(c ? "Tap a shelf to check this battery in." : "Choose a storage location.", c ? "" : "err"); $("locWrap").scrollIntoView({block:"center", behavior:"smooth"}); if (c) c.focus({preventScroll:true}); else $("loc").focus({preventScroll:true}); return;
     }
-    const rIn = $(t==="in" ? "reasonIn" : "reasonOut").value;
-    if (!rIn) { toast("Choose a reason.", "err"); return; }
-    if (rIn==="Other" && !$("reasonOther").value.trim()) { toast("Describe the reason.", "err"); $("reasonOther").focus(); return; }
     const rsel = $(t==="in" ? "reasonIn" : "reasonOut").value;
     const reason = rsel==="Other" ? ($("reasonOther").value.trim() || "Other") : rsel;
     const at = Date.now();   // time stamp of the moment of saving; it cannot be changed
@@ -638,7 +641,9 @@ td.dim{color:var(--muted)}
       await ref0.set(next);
 
       toast(`${sn} ${t==="in"?"checked in":"checked out"}${t==="in"&&loc?" → "+loc:""}` + (L && L.cap && usedNow>L.cap ? `. ${loc} is over its maximum (${usedNow}/${L.cap}).` : "") + (mixes ? ". " + mixes : ""), (L && L.cap && usedNow>L.cap) || mixes ? "err" : t, () => before ? ref0.set(before) : ref0.delete());
-      $("sn").value=""; $("note").value=""; $("snStatus").hidden=true; $("typeHint").hidden=true; $("shelfPick").hidden=true; hideSuggest();
+      $("sn").value=""; $("note").value="";
+      for (const id of ["model","cond","purpose","inBox","reasonIn","reasonOut"]) $(id).value = "";
+      $("reasonOther").value = ""; S.refDraft = ""; if (!$("ref").readOnly) $("ref").value = ""; onReason(); $("snStatus").hidden=true; $("typeHint").hidden=true; $("shelfPick").hidden=true; hideSuggest();
       if (S.cfg.locations.length) $("loc").value="";
       updateSnStatus();   // the form is empty again: show all fields and the neutral button
       $("sn").focus();
@@ -898,7 +903,7 @@ td.dim{color:var(--muted)}
     const rows = locRows();
     // spots to highlight for the battery in the scan form
     const sn = norm($("sn").value), cur = sn ? S.bats.get(docId(sn)) : null, t = sn ? dirFor(sn) : null;
-    const rec = sn && t==="in" ? suggestShelves(sn, $("model").value, $("cond").value, $("purpose").value) : [];
+    const rec = sn && t==="in" && $("model").value && $("cond").value && $("purpose").value ? suggestShelves(sn, $("model").value, $("cond").value, $("purpose").value) : [];
     const recSet = new Set(rec.slice(0,5).map(r=>r.name)), best = rec[0] && rec[0].name, here = cur && cur.status==="in" ? cur.location : "";
     const walls = { "1":new Map(), "2":new Map(), "3":new Map() }, zones = [], other = [];
     for (const r of rows) {
@@ -1017,7 +1022,9 @@ td.dim{color:var(--muted)}
   $("modeOut").addEventListener("click",()=>setMode("out"));
   $("modeAuto").addEventListener("click",()=>setMode("auto"));
   $("reasonIn").addEventListener("change",onReason); $("reasonOut").addEventListener("change",onReason);
-  $("reasonIn").replaceChildren(...REASONS.in.map(r=>el("option",{value:r,text:r}))); $("reasonOut").replaceChildren(...REASONS.out.map(r=>el("option",{value:r,text:r})));
+  const choose = () => el("option",{value:"",text:"Choose…"});
+  $("reasonIn").replaceChildren(choose(), ...REASONS.in.map(r=>el("option",{value:r,text:r}))); $("reasonOut").replaceChildren(choose(), ...REASONS.out.map(r=>el("option",{value:r,text:r})));
+  for (const id of ["model","cond","purpose","inBox","reasonIn","reasonOut","reasonOther","loc"]) { $(id).addEventListener("change", () => $(id).classList.remove("missing")); $(id).addEventListener("input", () => $(id).classList.remove("missing")); }
   try { if (localStorage.getItem("bw.instant")==="0") $("instant").checked=false; } catch {}
   $("instant").addEventListener("change",()=>{ try { localStorage.setItem("bw.instant", $("instant").checked?"1":"0"); } catch {} });
   $("sn").addEventListener("input",()=>{ autofillType(); updateSnStatus(); renderSuggest(); });
@@ -1035,8 +1042,8 @@ td.dim{color:var(--muted)}
   $("fStatus").addEventListener("change",renderLedger); $("fType").addEventListener("change",renderLedger);
   $("moreBtn").addEventListener("click",()=>{ S.limit+=100; renderLedger(); });
 
-  $("cond").replaceChildren(...CONDITIONS.map(c=>el("option",{value:c,text:c})));
-  $("purpose").replaceChildren(...PURPOSES.map(c=>el("option",{value:c,text:c})));
+  $("cond").replaceChildren(choose(), ...CONDITIONS.map(c=>el("option",{value:c,text:c})));
+  $("purpose").replaceChildren(choose(), ...PURPOSES.map(c=>el("option",{value:c,text:c})));
   $("settingsBtn").addEventListener("click",openSettings); $("setCancel").addEventListener("click",()=>{ $("setModal").hidden=true; }); $("setSave").addEventListener("click",saveSettings);
   fillSelects();
   { let m="auto"; try { const v=localStorage.getItem("bw.mode"); if (["auto","in","out"].includes(v)) m=v; } catch {} setMode(m); }
