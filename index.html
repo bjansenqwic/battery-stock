@@ -1036,7 +1036,7 @@ td.dim{color:var(--muted)}
       el("div",{class:"walk"}, "Keep the walkway clear"),
       el("div",{style:"grid-row:2 / span 2;grid-column:2"}, el("div",{class:"walltag",text:"S2 · right wall"}),
         el("div",{class:"wallcol"}, ...[...walls["2"].keys()].sort((a,b)=>a-b).map(k => column(walls["2"].get(k))))),
-      el("div",{style:"grid-column:1;display:flex;gap:12px;align-items:flex-end"},
+      el("div",{style:"grid-column:1;display:flex;flex-direction:column;gap:12px"},
         zones.length ? el("div",{style:"flex:0 0 auto"}, el("div",{class:"walltag",text:"Dedicated areas"}),
           el("div",{class:"wallrow",style:"width:"+(zones.length*104)+"px"}, ...zones.map(z => el("div",{class:"stack"}, spot(z))))) : null,
         walls["3"].size ? el("div",{style:"flex:1;min-width:0"}, el("div",{class:"walltag",text:"S3 · bottom wall"}),
