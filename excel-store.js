@@ -5,11 +5,12 @@
  *  - reading and writing the Excel workbook in OneDrive/SharePoint (Microsoft Graph),
  *  - a live camera scanner.
  *
- * The workbook has three tables:
- *  Movements – one row per check-in, check-out or type change. Rows are only added, never edited,
+ * The workbook has four tables:
+ *  Movements – one row per check-in, check-out, charge or type change. Rows are only added, never edited,
  *              so several people can work at the same time. Current stock is worked out from them.
  *  Types     – battery types and the start of their serial numbers.
- *  Locations – storage spots, their maximum and what they are for.
+ *  Locations – storage spots, their maximum and what they are for ("Crate: <size>" marks a crate).
+ *  CrateSizes – crate sizes and how many batteries each holds.
  *
  * Without clientId and workbookUrl in config.js the app runs in demo mode: data stays in this browser.
  */
@@ -17,7 +18,7 @@
   "use strict";
   const CFG = Object.assign({ clientId: "", tenantId: "", workbookUrl: "" }, window.BATTERY_CONFIG || {});
   const DEMO = !CFG.clientId || !CFG.workbookUrl || /[?&]demo\b/.test(location.search);   // add ?demo to the address to try the app without signing in
-  const TABLE = { mov: "Movements", types: "Types", locs: "Locations" };
+  const TABLE = { mov: "Movements", types: "Types", locs: "Locations", crates: "CrateSizes" };
   const COLS = [["Date", "date"], ["Movement", "mv"], ["Serial number", "sn"], ["Type", "model"], ["Battery status", "condition"],
     ["Battery is for", "purpose"], ["In box", "inBox"], ["Location", "loc"], ["Reason", "reason"], ["Reference nr", "ref"],
     ["Note", "note"], ["By", "by"], ["Email", "email"], ["Timestamp", "iso"], ["ID", "id"]];
@@ -62,7 +63,7 @@
     async append(rows) { const a = this.read("bs.mov", []); a.push(...rows); localStorage.setItem("bs.mov", JSON.stringify(a)); },
     async remove(ids) { const s = new Set(ids); localStorage.setItem("bs.mov", JSON.stringify(this.read("bs.mov", []).filter(r => !s.has(r.id)))); },
     async settings() { return this.read("bs.set", window.BATTERY_DEFAULTS || { types: [], locations: [] }); },
-    async saveSettings(v) { localStorage.setItem("bs.set", JSON.stringify({ types: v.types, locations: v.locations })); },
+    async saveSettings(v) { localStorage.setItem("bs.set", JSON.stringify({ types: v.types, locations: v.locations, crateSizes: v.crateSizes || [] })); },
   };
 
   // ---------- Excel backend (Microsoft Graph) ----------
@@ -118,6 +119,7 @@
         [TABLE.mov, COLS.map(c => c[0]), []],
         [TABLE.types, ["Type", "S/N starts with"], d.types.map(t => [t.name, (t.codes || []).join(", ")])],
         [TABLE.locs, ["Location", "Max", "For"], d.locations.map(l => [l.name, l.cap || "", ONLY_TO_TEXT[l.only] || ""])],
+        [TABLE.crates, ["Crate size", "Max"], (d.crateSizes || []).map(c => [c.name, c.cap || ""])],
       ];
       for (const [name, head, rows] of plan) {
         if (tables.has(name.toLowerCase())) continue;
@@ -144,7 +146,7 @@
         let at = Date.parse(g("iso"));
         if (!Number.isFinite(at)) { const d = ix.date >= 0 ? row[ix.date] : ""; at = typeof d === "number" ? Math.round((d - 25569) * 86400000) + new Date().getTimezoneOffset() * 60000 : Date.parse(String(d).replace(" ", "T")); }
         if (!Number.isFinite(at)) at = i;
-        out.push({ id: g("id") || "row" + i, at, mv: mv.startsWith("O") ? "OUT" : mv.startsWith("T") ? "TYPE" : "IN", sn, model: g("model"), condition: g("condition"),
+        out.push({ id: g("id") || "row" + i, at, mv: mv.startsWith("O") ? "OUT" : mv.startsWith("T") ? "TYPE" : mv.startsWith("C") ? "CHARGE" : "IN", sn, model: g("model"), condition: g("condition"),
           purpose: g("purpose"), inBox: g("inBox"), loc: g("loc"), reason: g("reason"), ref: g("ref"), note: g("note"), by: g("by"), email: g("email").toLowerCase() });
       });
       return out;
@@ -165,12 +167,16 @@
     async settings() {
       const tv = await this.values(TABLE.types), lv = await this.values(TABLE.locs);
       const types = tv.slice(1).map(r => ({ name: txt(r[0]), codes: txt(r[1]).split(/[,;]/).map(x => x.trim().toUpperCase()).filter(Boolean) })).filter(t => t.name);
-      const locations = lv.slice(1).map(r => ({ name: txt(r[0]), cap: Math.max(0, parseInt(txt(r[1]), 10) || 0), only: TEXT_TO_ONLY(txt(r[2])) })).filter(l => l.name);
-      return { types, locations };
+      const locations = lv.slice(1).map(r => { const f = txt(r[2]), cr = f.match(/^crate\b\s*:?\s*(.*)$/i);
+        return Object.assign({ name: txt(r[0]), cap: Math.max(0, parseInt(txt(r[1]), 10) || 0), only: cr ? "" : TEXT_TO_ONLY(f) }, cr ? { crate: cr[1].trim() || "Crate" } : {}); }).filter(l => l.name);
+      const cv = await this.values(TABLE.crates);
+      const crateSizes = cv.slice(1).map(r => ({ name: txt(r[0]), cap: Math.max(0, parseInt(txt(r[1]), 10) || 0) })).filter(c => c.name);
+      return { types, locations, crateSizes };
     },
     async saveSettings(v) {
       await this.writeTable(TABLE.types, v.types.map(t => [t.name, (t.codes || []).join(", ")]));
-      await this.writeTable(TABLE.locs, v.locations.map(l => [l.name, l.cap ? l.cap : "", ONLY_TO_TEXT[l.only] || ""]));
+      await this.writeTable(TABLE.locs, v.locations.map(l => [l.name, l.cap ? l.cap : "", l.crate ? "Crate: " + l.crate : ONLY_TO_TEXT[l.only] || ""]));
+      await this.writeTable(TABLE.crates, (v.crateSizes || []).map(c => [c.name, c.cap || ""]));
     },
     // Make a table hold exactly these rows: overwrite, then add or remove rows at the end.
     async writeTable(name, rows) {
@@ -197,6 +203,8 @@
       if (r.email && r.by) names.set(r.email, r.by);
       const id = docId(r.sn); let b = m.get(id);
       if (r.mv === "TYPE") { if (b) { b.model = r.model; b.typeRows = (b.typeRows || []).concat(r.id); } continue; }
+      // a charge: the battery stays where it is; its 3 months start again
+      if (r.mv === "CHARGE") { if (b) { b.history.push({ id: r.id, t: "charge", at: r.at, loc: r.loc, note: r.note, by: r.email || r.by || null }); b.lastCharge = r.at; } continue; }
       const e = { id: r.id, t: r.mv === "OUT" ? "out" : "in", at: r.at, loc: r.loc, model: r.model, reason: r.reason, note: r.note, ref: r.ref,
         condition: r.condition, inBox: yn(r.inBox), purpose: r.purpose, by: r.email || r.by || null };
       if (!b) { b = { sn: r.sn, model: "", firstSeen: r.at, lastIn: null, lastOut: null, location: "", lastLocation: "", history: [] }; m.set(id, b); }
@@ -209,7 +217,7 @@
     return m;
   }
   const toRow = (sn, e, mv) => ({ id: uid(), at: e.at || Date.now(), date: localText(e.at || Date.now()), iso: new Date(e.at || Date.now()).toISOString(),
-    mv: mv || (e.t === "out" ? "OUT" : "IN"), sn, model: e.model || "", condition: e.condition || "", purpose: e.purpose || "",
+    mv: mv || (e.t === "out" ? "OUT" : e.t === "charge" ? "CHARGE" : "IN"), sn, model: e.model || "", condition: e.condition || "", purpose: e.purpose || "",
     inBox: e.inBox === "yes" ? "Yes" : e.inBox === "no" ? "No" : "", loc: e.loc || "", reason: e.reason || "", ref: e.ref || "", note: e.note || "",
     by: me.name, email: me.email });
 
