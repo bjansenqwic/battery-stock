@@ -269,7 +269,7 @@ td.dim{color:var(--muted)}
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuLocs">Storage locations</button><button type="button" role="menuitem" id="setMenuCrates">Crates</button></div></div><div class="who" id="who"></div></div>
+    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuCrates">Crates</button></div></div><div class="who" id="who"></div></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -364,8 +364,7 @@ td.dim{color:var(--muted)}
 
       <button class="btn" id="submitBtn" type="submit">Check in / out</button>
       <div class="hint">Every field is required except Reference nr and Note.</div>
-      <label class="check" id="instantWrap" for="instant"><input type="checkbox" id="instant" checked> Save immediately after scanning</label>
-      <div class="hint">Auto checks a battery out when it is in stock, and in when it is not. The fields start empty for every battery, so each one is filled in on purpose. The type is set automatically from the serial number. When Auto checks a battery out, it keeps that battery's recorded status, purpose and in-box.</div>
+      <div class="hint">Auto checks a battery in or out based on whether it is in stock.</div>
     </form>
 
     <!-- Ledger -->
@@ -608,7 +607,7 @@ td.dim{color:var(--muted)}
   }
 
   // ---------- form ----------
-  const instant = () => $("instant").checked;
+  const instant = () => true;   // a scan (Enter) always goes straight to saving; missing fields are pointed out
   function dirFor(sn) { if (S.mode!=="auto") return S.mode; const b=S.bats.get(docId(sn)); return b && b.status==="in" ? "out" : "in"; }
   function setMode(m) {
     S.mode = m;
@@ -617,7 +616,6 @@ td.dim{color:var(--muted)}
     $("reasonInWrap").hidden = m==="out"; $("reasonOutWrap").hidden = m==="in";
     $("reasonInLabel").textContent = m==="auto" ? "Reason when checking in" : "Reason";
     $("reasonOutLabel").textContent = m==="auto" ? "Reason when checking out" : "Reason";
-    $("instantWrap").hidden = m!=="auto";
     try { localStorage.setItem("bw.mode", m); } catch {}
     onReason(); updateSnStatus();
   }
@@ -638,7 +636,7 @@ td.dim{color:var(--muted)}
     const special = list.length && list.every(r => r.only && r.only !== "any");
     box.replaceChildren(el("div",{class:"head",text: special ? `Recommended: the ${ZONE_NAME[zone]} area` : `Recommended spots for ${type||"this battery"} · ${cond}`}));
     if (!type && !special) box.append(el("div",{class:"hint",text:"Choose the type above to see the spots for that type."}));
-    if (!list.length) { box.append(el("div",{class:"hint",text:"No spot has room for this type and status. Choose one from the list below, or add spots under Settings."})); return; }
+    if (!list.length) { box.append(el("div",{class:"hint",text:"No spot has room for this type and status. Choose one from the list below, or ask an admin to add spots."})); return; }
     box.append(el("div",{class:"chips"}, ...list.slice(0,8).map((r,i)=>el("button",{type:"button",class:"chip"+(i===0?" best":"")+(r.only?" zone":""),title:"Check in at "+r.name,
       onclick:()=>{ $("loc").value=r.name; $("scanForm").requestSubmit(); }},
       r.name, el("small",{text:(i===0?"Best · ":"")+(r.only ? ZONE_NAME[r.only]+" · "+r.used+(r.cap?"/"+r.cap:"") : (r.cap?`${r.used}/${r.cap}`:`${r.used}`)+(r.used?"":" · empty"))})))),
@@ -703,7 +701,7 @@ td.dim{color:var(--muted)}
     for (const [id, what] of need) if (!$(id).value) { $(id).classList.add("missing"); toast(`Choose ${what}.`, "err"); $(id).scrollIntoView({block:"center", behavior:"smooth"}); $(id).focus({preventScroll:true}); return; }
     { const r = $(t==="in" ? "reasonIn" : "reasonOut").value; if (r==="Other" && !$("reasonOther").value.trim()) { $("reasonOther").classList.add("missing"); toast("Describe the reason.", "err"); $("reasonOther").focus(); return; } }
     if (t==="in" && !$("loc").value) {
-      if (!S.cfg.locations.length) { toast("Add your shelves under Settings before checking batteries in.", "err"); return; }
+      if (!S.cfg.locations.length) { toast("There are no storage locations yet. Ask an admin to set them up.", "err"); return; }
       const c=document.querySelector("#shelfPick .chip"); toast(c ? "Tap a shelf to check this battery in." : "Choose a storage location.", c ? "" : "err"); $("locWrap").scrollIntoView({block:"center", behavior:"smooth"}); if (c) c.focus({preventScroll:true}); else $("loc").focus({preventScroll:true}); return;
     }
     const rsel = $(t==="in" ? "reasonIn" : "reasonOut").value;
@@ -982,7 +980,7 @@ td.dim{color:var(--muted)}
     if (!S.loaded) { es.hidden=false; es.replaceChildren(el("strong",{text:"Loading stock…"}), "Batteries will appear here as soon as the shared list loads."); }
     else if (!rows.length) {
       es.hidden=false;
-      if (S.tab==="loc") es.replaceChildren(el("strong",{text:"No locations yet"}), "Add your shelves and their maximum under Settings.");
+      if (S.tab==="loc") es.replaceChildren(el("strong",{text:"No locations yet"}), "Storage locations are set up by an admin.");
       else if (!S.bats.size) es.replaceChildren(el("strong",{text:"No batteries yet"}), "Scan or type a serial number on the left and press Check in to add the first one.");
       else if ($("q").value.trim()) es.replaceChildren(el("strong",{text:"No matches"}), "Nothing matches your search. Try part of the S/N.");
       else es.replaceChildren(el("strong",{text: S.tab==="stock"?"Nothing in stock":"Nothing to show"}), S.tab==="stock"?"Every known battery is checked out.":"Try a different filter.");
@@ -995,7 +993,7 @@ td.dim{color:var(--muted)}
   // S3 along the bottom. Several levels at one position are drawn as a stack, top level first.
   function renderMap() {
     const box = $("mapView");
-    if (!S.cfg.locations.length) { box.replaceChildren(el("div",{class:"empty"}, el("strong",{text:"No locations yet"}), "Add your spots under Settings to see the map.")); return; }
+    if (!S.cfg.locations.length) { box.replaceChildren(el("div",{class:"empty"}, el("strong",{text:"No locations yet"}), "Storage locations are set up by an admin.")); return; }
     const rows = locRows();
     // spots to highlight for the battery in the scan form
     const sn = norm($("sn").value), cur = sn ? S.bats.get(docId(sn)) : null, t = sn ? dirFor(sn) : null;
@@ -1233,8 +1231,6 @@ td.dim{color:var(--muted)}
   const choose = () => el("option",{value:"",text:"Choose…"});
   $("reasonIn").replaceChildren(choose(), ...REASONS.in.map(r=>el("option",{value:r,text:r}))); $("reasonOut").replaceChildren(choose(), ...REASONS.out.map(r=>el("option",{value:r,text:r})));
   for (const id of ["model","cond","purpose","inBox","reasonIn","reasonOut","reasonOther","loc"]) { $(id).addEventListener("change", () => $(id).classList.remove("missing")); $(id).addEventListener("input", () => $(id).classList.remove("missing")); }
-  try { if (localStorage.getItem("bw.instant")==="0") $("instant").checked=false; } catch {}
-  $("instant").addEventListener("change",()=>{ try { localStorage.setItem("bw.instant", $("instant").checked?"1":"0"); } catch {} });
   $("sn").addEventListener("input",()=>{ autofillType(); updateSnStatus(); renderSuggest(); });
   $("sn").addEventListener("blur",()=>setTimeout(hideSuggest,120)); $("sn").addEventListener("focus",renderSuggest);
   $("model").addEventListener("change",()=>{ S.typeSource = $("modelWrap").hidden ? "label" : "chosen"; updateSnStatus(); });   /* hidden field: set by a scanned type barcode */ $("cond").addEventListener("change",updateSnStatus); $("purpose").addEventListener("change",updateSnStatus);
@@ -1262,7 +1258,6 @@ td.dim{color:var(--muted)}
     document.addEventListener("click",e=>{ if (!$("setWrap").contains(e.target)) shut(); });
     document.addEventListener("keydown",e=>{ if (e.key==="Escape") shut(); });
     $("setMenuTypes").addEventListener("click",()=>{ shut(); openSettings("types"); });
-    $("setMenuLocs").addEventListener("click",()=>{ shut(); openSettings("locs"); });
     $("setMenuCrates").addEventListener("click",()=>{ shut(); openCrates(); }); }
    $("setCancel").addEventListener("click",()=>{ $("setModal").hidden=true; }); $("setSave").addEventListener("click",saveSettings);
   fillSelects();
