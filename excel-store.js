@@ -68,9 +68,17 @@
   // ---------- Excel backend (Microsoft Graph) ----------
   const SCOPES = ["User.Read", "Files.ReadWrite.All"];
   let pca = null, account = null;
+  // Installed app (Chrome "Install"): a full-page redirect to Microsoft can leave the app window and lose the sign-in state,
+  // so there the sign-in opens in a small Microsoft window (popup) instead.
+  const INSTALLED = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: window-controls-overlay)").matches || navigator.standalone === true;
+  // This page loaded inside that Microsoft sign-in window: do nothing, the app window reads the answer and closes it.
+  const IN_POPUP = !!window.opener && window.opener !== window && /^msal\./.test(window.name || "");
   async function token() {
     try { return (await pca.acquireTokenSilent({ scopes: SCOPES, account })).accessToken; }
-    catch (e) { await pca.acquireTokenRedirect({ scopes: SCOPES, account }); throw e; }
+    catch (e) {
+      if (INSTALLED) return (await pca.acquireTokenPopup({ scopes: SCOPES, account })).accessToken;
+      await pca.acquireTokenRedirect({ scopes: SCOPES, account }); throw e;
+    }
   }
   async function graph(path, opts = {}, tries = 5) {
     const url = path.startsWith("http") ? path : "https://graph.microsoft.com/v1.0" + path;
@@ -283,27 +291,32 @@
   function signInScreen(msg) {
     const d = document.createElement("div"); d.id = "xlSignin";
     d.style.cssText = "position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg,#eef1f4)";
-    d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:14px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
+    d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:8px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
       '<h1 style="margin:0;font-size:24px">Battery Stock</h1><p style="margin:0;color:var(--muted,#5b6876)">Sign in with your work Microsoft account to check batteries in and out.</p>' +
-      '<button type="button" id="xlSignBtn" style="border:0;border-radius:9px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0f5bd8);color:#fff">Sign in with Microsoft</button>' +
+      '<button type="button" id="xlSignBtn" style="border:0;border-radius:999px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0f5bd8);color:#fff">Sign in with Microsoft</button>' +
       '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div></div>';
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
-    d.querySelector("#xlSignBtn").addEventListener("click", () => pca.loginRedirect({ scopes: SCOPES, prompt: "select_account" }));
+    d.querySelector("#xlSignBtn").addEventListener("click", async () => {
+      if (!INSTALLED) return pca.loginRedirect({ scopes: SCOPES, prompt: "select_account" });
+      try { const r = await pca.loginPopup({ scopes: SCOPES, prompt: "select_account" }); pca.setActiveAccount(r.account); location.reload(); }
+      catch (e) { d.querySelector("#xlSignMsg").textContent = e && /popup_window_error|empty_window/.test(e.errorCode || "") ? "The sign-in window was blocked. Allow pop-ups for this app and try again." : "Sign-in failed: " + ((e && (e.errorMessage || e.message)) || "unknown error"); }
+    });
   }
   function addTopButtons() {
     const host = document.querySelector(".topbtns"); if (!host) return;
     const a = document.createElement("a"); a.id = "xlOpen"; a.className = "btn ghost"; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open Excel file"; a.hidden = true; a.style.textDecoration = "none";
     if (xl.webUrl) { a.href = xl.webUrl; a.hidden = false; }
     host.append(a);
-    if (!DEMO) { const b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.textContent = "Sign out"; b.addEventListener("click", () => pca.logoutRedirect({ account })); host.append(b); }
+    if (!DEMO) { const b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.textContent = "Sign out"; b.addEventListener("click", () => INSTALLED ? pca.logoutPopup({ account }).catch(() => {}).finally(() => location.reload()) : pca.logoutRedirect({ account })); host.append(b); }
     else { const s = document.createElement("span"); s.className = "pill out"; s.textContent = "Demo: data stays on this device"; s.title = "Fill in config.js to use the shared Excel file."; host.prepend(s); }
   }
   async function start() {
+    if (IN_POPUP) { document.body.style.visibility = "hidden"; return; }
     if (!DEMO) {
       try {
         const redirectUri = location.origin + location.pathname.replace(/index\.html$/, "");
-        pca = new msal.PublicClientApplication({ auth: { clientId: CFG.clientId, authority: "https://login.microsoftonline.com/" + (CFG.tenantId || "organizations"), redirectUri }, cache: { cacheLocation: "localStorage" } });
+        pca = new msal.PublicClientApplication({ auth: { clientId: CFG.clientId, authority: "https://login.microsoftonline.com/" + (CFG.tenantId || "organizations"), redirectUri }, cache: { cacheLocation: "localStorage", temporaryCacheLocation: "localStorage", storeAuthStateInCookie: true } });
         const r = await pca.handleRedirectPromise();
         account = (r && r.account) || pca.getAllAccounts()[0] || null;
       } catch (e) { signInScreen("Sign-in failed: " + (e.errorMessage || e.message || "unknown error")); return; }
