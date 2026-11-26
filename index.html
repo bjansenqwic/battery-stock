@@ -118,6 +118,31 @@ button.stat:hover{border-color:var(--ink)}
 .seg button[aria-pressed="true"].auto{background:var(--accent);color:var(--accent-ink)}
 .modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,16,22,.55)}
 .modal .box{background:var(--surface);border-radius:8px;box-shadow:var(--shadow);width:min(760px,100%);max-height:100%;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px}
+/* three views, picked in the top bar: check in/out (start), overview tiles, stock & map */
+.views{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--hdr-ink);border-radius:999px;max-width:100%;overflow-x:auto}
+.views button{border:0;background:transparent;color:var(--hdr-ink);font:600 14px var(--f-sans);padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.views button[aria-pressed="true"]{background:#fa530b;color:#ffffff}
+.wrap[data-view="scan"] .stats,.wrap[data-view="scan"] .ledger,.wrap[data-view="stats"] .main,.wrap[data-view="ledger"] .stats,.wrap[data-view="ledger"] .scan{display:none}
+.wrap[data-view="scan"] .main{grid-template-columns:minmax(0,560px);justify-content:center}
+.wrap[data-view="ledger"] .main{grid-template-columns:minmax(0,1fr)}
+.wrap[data-view="stats"] .stats{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.wrap[data-view="stats"] .stat{padding:22px 24px}
+.wrap[data-view="stats"] .stat .v{font-size:44px}
+/* the scan form: first only the serial number; the rest unfolds once one is filled in */
+.reveal{display:grid;grid-template-rows:0fr;opacity:0;margin-top:-14px;transition:grid-template-rows .35s ease,opacity .3s ease,margin-top .35s ease}
+.reveal.open{grid-template-rows:1fr;opacity:1;margin-top:0}
+.reveal-in{min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:14px}
+.reveal.open.done .reveal-in{overflow:visible}
+.scan.collapsed #camHint{display:none}
+@media (prefers-reduced-motion:reduce){.reveal{transition:none}}
+/* map popup after a check-in */
+.mapbox{width:min(1000px,100%)!important}
+.maphead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.xbtn{flex:none;border:0;background:transparent;color:var(--ink);font:400 30px/1 var(--f-sans);width:42px;height:42px;border-radius:50%;cursor:pointer}
+.xbtn:hover,.xbtn:focus-visible{background:var(--sunken)}
+.spot.here.focus{outline:3px solid #fa530b;outline-offset:2px;animation:spotpulse 1.1s ease-in-out 3}
+@keyframes spotpulse{50%{outline-offset:6px}}
+@media (prefers-reduced-motion:reduce){.spot.focus{animation:none}}
 .modal h2{margin:0;font-size:18px}
 .modal textarea{font-family:var(--f-mono);font-size:13px;min-height:170px;white-space:pre}
 .rowbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -269,13 +294,13 @@ td.dim{color:var(--muted)}
 .confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px}
 </style>
 
-<div class="wrap">
+<div class="wrap" data-view="scan">
   <header class="top">
     <div class="brand"><svg class="logo" viewBox="0 0 200 51" role="img" aria-label="QWIC" xmlns="http://www.w3.org/2000/svg"><path d="M65.5945 50.3906H119.766C124.598 50.3906 128.497 46.4912 128.497 41.6596V0.170685H117.587V37.2875C117.587 38.4954 116.615 39.467 115.407 39.467H101.215V0.170685H90.304V39.467H73.9316V0.170685H63.0211V50.3775H65.6076L65.5945 50.3906Z" fill="currentColor"/><path d="M147.89 0H136.979V50.2068H147.89V0Z" fill="currentColor"/><path d="M167.255 13.2475C167.255 12.0396 168.227 11.0681 169.435 11.0681H200V0.144409H165.076C160.244 0.144409 156.345 4.05697 156.345 8.87545V41.6202C156.345 46.4518 160.244 50.3512 165.076 50.3512H200V39.4407H169.435C168.227 39.4407 167.255 38.4691 167.255 37.2612V13.2475Z" fill="currentColor"/><path d="M8.73104 0.118164C3.89942 0.118164 0 4.03072 0 8.84921V41.5939C0 46.4255 3.89942 50.325 8.73104 50.325H35.6857L24.7752 39.4144H13.1031C11.8952 39.4144 10.9236 38.4429 10.9236 37.235V13.2082C10.9236 12.0003 11.8952 11.0287 13.1031 11.0287H41.4888C42.6968 11.0287 43.6683 12.0003 43.6683 13.2082V33.585L54.5788 44.4955V8.84921C54.5788 4.01759 50.6663 0.118164 45.8478 0.118164H8.73104Z" fill="currentColor"/><path d="M26.2718 35.1474L39.9264 48.802C40.7798 49.6554 42.4604 50.3512 43.6683 50.3512H52.4256C53.6335 50.3512 53.9223 49.6554 53.0689 48.802L39.4144 35.1474C38.5609 34.294 36.8804 33.5981 35.6856 33.5981H26.9283C25.7204 33.5981 25.4316 34.294 26.285 35.1474" fill="#F47920"/></svg><div>
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false" aria-label="Dark mode"><span id="themeLbl">Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuCrates">Boxes</button></div></div><div class="who" id="who"></div></div>
+    <div class="topbtns"><nav class="views" aria-label="View"><button type="button" data-view="scan" aria-pressed="true">Check in/out</button><button type="button" data-view="stats" aria-pressed="false">Overview</button><button type="button" data-view="ledger" aria-pressed="false">Stock &amp; map</button></nav><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false" aria-label="Dark mode"><span id="themeLbl">Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuCrates">Boxes</button></div></div><div class="who" id="who"></div></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -290,7 +315,7 @@ td.dim{color:var(--muted)}
 
   <div class="main">
     <!-- Scan station -->
-    <form class="panel scan" id="scanForm" autocomplete="off">
+    <form class="panel scan collapsed" id="scanForm" autocomplete="off">
       <div class="seg" role="group" aria-label="Movement">
         <button type="button" class="auto" id="modeAuto" aria-pressed="true">Auto</button>
         <button type="button" class="in" id="modeIn" aria-pressed="false">Check in</button>
@@ -311,6 +336,7 @@ td.dim{color:var(--muted)}
         <div class="hint" id="camHint" style="margin-top:6px">Tap Scan and hold the barcode in front of the camera; it is read by itself. You can also paste or drag a photo onto this form, or use a handheld barcode scanner.</div>
       </div>
 
+      <div class="reveal" id="formRest" inert><div class="reveal-in">
       <div id="snStatus" class="status-card" hidden></div>
 
       <div class="grid2">
@@ -371,6 +397,7 @@ td.dim{color:var(--muted)}
       <button class="btn" id="submitBtn" type="submit">Check in / out</button>
       <div class="hint">Every field is required except Reference nr and Note.</div>
       <div class="hint">Auto checks a battery in or out based on whether it is in stock.</div>
+      </div></div>
     </form>
 
     <!-- Ledger -->
@@ -444,6 +471,12 @@ td.dim{color:var(--muted)}
     <div class="rowbtns"><button class="btn ghost" id="crateClose" type="button">Close</button></div>
   </div>
 </div>
+<div class="modal" id="mapModal" hidden>
+  <div class="box mapbox" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+    <div class="maphead"><h2 id="mapTitle">Location</h2><button type="button" class="xbtn" id="mapClose" aria-label="Close">×</button></div>
+    <div id="mapPop"></div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden role="status"></div>
 
 <script>
@@ -474,7 +507,7 @@ td.dim{color:var(--muted)}
   const boxTxt = v => v==="yes" ? "Yes" : v==="no" ? "No" : "–";
   const name = id => (id && S.profiles[id] && S.profiles[id].name) || (id && S.me && id===S.me.id ? (S.me.name||"You") : (id ? "Someone" : "–"));
   let toastT;
-  function toast(msg, kind="", undo=null) { const t=$("toast"); t.replaceChildren(msg); if (undo) t.append(el("button",{class:"undo",type:"button",text:"Undo",onclick:async()=>{ t.hidden=true; try { await undo(); toast("Undone"); } catch { toast("Couldn't undo. Try again.","err"); } }})); t.className="toast "+kind; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, undo?8000:3200); }
+  function toast(msg, kind="", undo=null, more=[]) { const t=$("toast"); t.replaceChildren(msg); if (undo) t.append(el("button",{class:"undo",type:"button",text:"Undo",onclick:async()=>{ t.hidden=true; try { await undo(); toast("Undone"); } catch { toast("Couldn't undo. Try again.","err"); } }})); for (const m of more) t.append(el("button",{class:"undo",type:"button",text:m.text,onclick:()=>{ t.hidden=true; m.onclick(); }})); t.className="toast "+kind; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, undo||more.length?8000:3200); }
   function banner(msg){ const b=$("banner"); if(!msg){b.hidden=true;return;} b.textContent=msg; b.hidden=false; }
 
   async function refreshProfiles(ids) {
@@ -673,7 +706,14 @@ td.dim{color:var(--muted)}
         "Leaves as: " + [prev.model || "no type", prev.condition || "no status", prev.purpose ? "for " + prev.purpose : "", prev.inBox ? "in box: " + boxTxt(prev.inBox) : ""].filter(Boolean).join(" · ")}));
     }
   }
-  function updateSnStatus() { updateSnStatusInner(); applyLock(); }
+  function updateSnStatus() { updateSnStatusInner(); applyLock(); syncReveal(); }
+  // the rest of the form unfolds once a serial number is filled in, and folds away again when it is empty
+  function syncReveal() {
+    const rest = $("formRest"), open = !!norm($("sn").value);
+    if (open === rest.classList.contains("open")) return;
+    rest.classList.toggle("open", open); rest.classList.remove("done"); rest.inert = !open; $("scanForm").classList.toggle("collapsed", !open);
+    if (open) { const done = () => rest.classList.contains("open") && rest.classList.add("done"); rest.addEventListener("transitionend", done, { once:true }); setTimeout(done, 450); }
+  }
   function updateSnStatusInner() {
     const sn = norm($("sn").value), box=$("snStatus"); paintBtn();
     if (S.tab==="map" && S.cfg) renderMap();
@@ -741,7 +781,7 @@ td.dim{color:var(--muted)}
       const ref0 = S.db.collection("batteries").doc(id), before = prev ? JSON.parse(JSON.stringify(prev)) : null;
       await ref0.set(next);
 
-      toast(`${sn} ${t==="in"?"checked in":"checked out"}${t==="in"&&loc?" → "+loc:""}` + (L && L.cap && usedNow>L.cap ? `. ${loc} is over its maximum (${usedNow}/${L.cap}).` : "") + (mixes ? ". " + mixes : ""), (L && L.cap && usedNow>L.cap) || mixes ? "err" : t, () => before ? ref0.set(before) : ref0.delete());
+      toast(`${sn} ${t==="in"?"checked in":"checked out"}${t==="in"&&loc?" → "+loc:""}` + (L && L.cap && usedNow>L.cap ? `. ${loc} is over its maximum (${usedNow}/${L.cap}).` : "") + (mixes ? ". " + mixes : ""), (L && L.cap && usedNow>L.cap) || mixes ? "err" : t, () => before ? ref0.set(before) : ref0.delete(), t==="in" && loc ? [{ text:"Show on map", onclick:() => showOnMap(sn, loc) }] : []);
       $("sn").value=""; $("note").value="";
       for (const id of ["model","cond","purpose","inBox","reasonIn","reasonOut"]) $(id).value = "";
       $("reasonOther").value = ""; S.refDraft = ""; S.typeSource = ""; S.typeChoices = null; S.typeNote = ""; fillSelects(); if (!$("ref").readOnly) $("ref").value = ""; onReason(); $("snStatus").hidden=true; $("typeHint").hidden=true; $("shelfPick").hidden=true; hideSuggest();
@@ -1000,14 +1040,14 @@ td.dim{color:var(--muted)}
   // ---------- map of the container ----------
   // Drawn like the container plan: side 1 along the top and side 2 down the right hold stacks of boxes, side 3 along
   // the bottom holds the broken bin (BRK) and the shelves 3-A (with MKT and TMP) and 3-B. Top box or level first.
-  function renderMap() {
-    const box = $("mapView");
+  function renderMap(target, focus) {   // focus: a location to point out (the map popup after a check-in)
+    const box = target || $("mapView");
     if (!S.cfg.locations.length) { box.replaceChildren(el("div",{class:"empty"}, el("strong",{text:"No locations yet"}), "Storage locations are set up by an admin.")); return; }
     const rows = locRows();
     // spots to highlight for the battery in the scan form
     const sn = norm($("sn").value), cur = sn ? S.bats.get(docId(sn)) : null, t = sn ? dirFor(sn) : null;
-    const rec = sn && t==="in" && $("model").value && $("cond").value && $("purpose").value ? suggestShelves(sn, $("model").value, $("cond").value, $("purpose").value) : [];
-    const recSet = new Set(rec.slice(0,5).map(r=>r.name)), best = rec[0] && rec[0].name, here = cur && cur.status==="in" ? cur.location : "";
+    const rec = !focus && sn && t==="in" && $("model").value && $("cond").value && $("purpose").value ? suggestShelves(sn, $("model").value, $("cond").value, $("purpose").value) : [];
+    const recSet = new Set(rec.slice(0,5).map(r=>r.name)), best = rec[0] && rec[0].name, here = focus || (cur && cur.status==="in" ? cur.location : "");
     // locations are named <side>-<stack or shelf>-<box or level>, e.g. 1-A-3 or 3-B-8; MKT, TMP and BRK are areas
     const groups = { "1":new Map(), "2":new Map(), "3":new Map() }, zone = {}, other = [];
     for (const [side, , stacks] of BOX_STACKS) for (const st of stacks) groups[side].set(st.split("-")[1], []);   // stacks show even without boxes
@@ -1020,14 +1060,14 @@ td.dim{color:var(--muted)}
     const spot = (r, extra="", slim=false) => {
       const full = r.cap && r.used >= r.cap, mixed = !r.only && (r.types.size > 1 || r.conds.size > 1);
       const cls = ["spot", slim ? "slim" : "", extra, r.only ? "zone z-"+r.only : r.used ? "" : "empty", !r.only && full ? "full" : "", mixed ? "mixed" : "",
-        recSet.has(r.name) ? (r.name===best ? "best" : "rec") : "", r.name===here ? "here" : ""].filter(Boolean).join(" ");
+        recSet.has(r.name) ? (r.name===best ? "best" : "rec") : "", r.name===here ? (focus ? "here focus" : "here") : ""].filter(Boolean).join(" ");
       const type = r.only ? ZONE_NAME[r.only] : !r.used ? "empty" : r.types.size > 1 ? "mixed types" : ([...r.types][0] || "no type");
       const st = r.only ? (r.used ? `${r.used} batter${r.used===1?"y":"ies"}` : "empty") : r.used ? (r.conds.size > 1 ? "mixed status" : [...r.conds][0] || "") : "";
       const pct = r.cap ? Math.min(100, Math.round(r.used / r.cap * 100)) : 0;
       const b = el("button", { type:"button", class:cls, title:`${r.name}${r.crate ? " (box "+r.crate+")" : ""}: ${type}${st ? ", "+st : ""}${r.cap ? `, ${r.used} of ${r.cap}` : ""}` },
         slim ? null : el("span",{class:"nm",text:r.name}), el("span",{class:"ty",text:slim && r.used && st ? type+" · "+st : type}), st && !r.only && !slim ? el("span",{class:"st",text:st}) : null,
         r.only ? el("span",{class:"st",text:st}) : el("span",{class:"ft"}, el("span",{class:"bar"+(full?" full":"")}, el("i",{style:`width:${pct}%`})), r.cap ? `${r.used}/${r.cap}` : `${r.used}`));
-      b.addEventListener("click", () => { $("q").value = r.name; setTab("stock"); });
+      b.addEventListener("click", () => { $("mapModal").hidden = true; $("q").value = r.name; setView("ledger"); setTab("stock"); });
       return b;
     };
     const column = (side, key, extra=[]) => {   // a stack of boxes or a shelf, top first
@@ -1054,6 +1094,17 @@ td.dim{color:var(--muted)}
       el("span",{}, el("i",{class:"m"}), "Mixed types or status"), el("span",{}, el("i",{class:"r"}), "Best spots for the battery in the form (thick line = best)"),
       el("span",{}, el("i",{class:"h"}), "Where that battery is now"), el("span",{}, "Tap a spot to see its batteries.")));
     box.replaceChildren(...kids);
+  }
+  // the three views in the top bar
+  function setView(v) {
+    document.querySelector(".wrap").dataset.view = v;
+    for (const b of document.querySelectorAll(".views button")) b.setAttribute("aria-pressed", String(b.dataset.view===v));
+    if (v==="ledger") renderLedger();
+  }
+  function showOnMap(sn, loc) {   // popup with the map, the battery's spot marked
+    $("mapTitle").textContent = `${sn} → ${loc}`; $("mapModal").hidden = false; renderMap($("mapPop"), loc);
+    const f = $("mapPop").querySelector(".spot.focus"); if (f) f.scrollIntoView({ block:"center", inline:"center" });
+    $("mapClose").focus({ preventScroll:true });
   }
   function setTab(t){ S.tab=t; S.limit=100; for (const k of ["stock","map","all","log","loc"]) $("tab-"+k).setAttribute("aria-selected", k===t); try{localStorage.setItem("bw.tab",t);}catch{} renderLedger(); }
 
@@ -1185,7 +1236,7 @@ td.dim{color:var(--muted)}
     const hist = (b.history||[]).slice().sort((x,y)=>y.at-x.at);
     refreshProfiles(hist.map(m=>m.by));
     const actions = el("div",{class:"drawer-actions"},
-      el("button",{class:"btn ghost",type:"button",text:"Use in scan form",onclick:()=>{ $("sn").value=b.sn; closeDrawer(); autofillType(); updateSnStatus(); $("sn").focus(); }}),
+      el("button",{class:"btn ghost",type:"button",text:"Use in scan form",onclick:()=>{ setView("scan"); $("sn").value=b.sn; closeDrawer(); autofillType(); updateSnStatus(); $("sn").focus(); }}),
       el("button",{class:"btn ghost",type:"button",text:"Close",onclick:closeDrawer}));
     if (b.status==="in" && S.canWrite!==false) actions.prepend(el("button",{class:"btn in",type:"button",text:"Charged",title:"This battery was just charged: its 3 months start again",onclick:()=>markCharged(S.openId)}));
     if (S.isAdmin) {   // only admins may delete a battery record
@@ -1255,8 +1306,10 @@ td.dim{color:var(--muted)}
   $("genBtn").addEventListener("click",generateShelves);
   $("stIdleBtn").addEventListener("click",()=>{ $("idleModal").hidden=false; renderIdle(); });
   $("idleClose").addEventListener("click",()=>{ $("idleModal").hidden=true; }); $("crateClose").addEventListener("click",()=>{ $("crateModal").hidden=true; crateAsk=null; });
-  for (const id of ["idleModal","crateModal"]) $(id).addEventListener("click",e=>{ if (e.target===$(id)) { $(id).hidden=true; crateAsk=null; } });
-  document.addEventListener("keydown",e=>{ if (e.key==="Escape") { $("idleModal").hidden=true; $("crateModal").hidden=true; crateAsk=null; } });
+  for (const b of document.querySelectorAll(".views button")) b.addEventListener("click", () => setView(b.dataset.view));
+  $("mapClose").addEventListener("click", () => { $("mapModal").hidden = true; });
+  for (const id of ["idleModal","crateModal","mapModal"]) $(id).addEventListener("click",e=>{ if (e.target===$(id)) { $(id).hidden=true; crateAsk=null; } });
+  document.addEventListener("keydown",e=>{ if (e.key==="Escape") { $("mapModal").hidden=true; $("idleModal").hidden=true; $("crateModal").hidden=true; crateAsk=null; } });
   setInterval(()=>{ if (S.loaded) renderStats(); }, 3600000);   // a battery can pass its 3 months while the page stays open
     $("sn").addEventListener("keydown",e=>{
     if (e.key==="ArrowDown" && !$("snSuggest").hidden) { e.preventDefault(); moveSuggest(1); return; }
