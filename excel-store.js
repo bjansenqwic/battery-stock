@@ -307,7 +307,7 @@
     d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:8px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
       '<h1 style="margin:0;font-size:24px">Battery Stock</h1><p style="margin:0;color:var(--muted,#5b6876)">Sign in with your work Microsoft account to check batteries in and out.</p>' +
       '<button type="button" id="xlSignBtn" style="border:0;border-radius:999px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0a0a0a);color:var(--accent-ink,#fff)">Sign in with Microsoft</button>' +
-      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-26c</div></div>';
+      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-26d</div></div>';
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
     d.querySelector("#xlSignBtn").addEventListener("click", async () => {
@@ -366,52 +366,105 @@
 
   // ---------- live camera scanner ----------
   // Outside Claude the browser may use the camera, so Scan opens a live picture that reads the code by itself.
+  // Fast path: the phone's own barcode reader (BarcodeDetector, built into Chrome on Android). Otherwise ZXing reads
+  // the middle of the picture, scaled down; every third try is a thorough read that also finds upright codes.
   const clean = t => { const lines = String(t || "").replace(/[\u0000-\u001f]+/g, "\n").split("\n").map(x => x.trim()).filter(Boolean);
     const line = lines.find(x => /^(s\/?n|serial(\s*(no|nr|number))?)\s*[:#=]/i.test(x)) || lines[0] || "";
     return norm(line.replace(/^(s\/?n|serial(\s*(no|nr|number))?)\s*[:#=]\s*/i, "")); };
-  let reader = null;
+  let stream = null, scanning = false, detectorP = null;
   function camModal() {
     let m = document.getElementById("liveCam"); if (m) return m;
     m = document.createElement("div"); m.id = "liveCam"; m.hidden = true;
     m.style.cssText = "position:fixed;inset:0;z-index:75;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(10,16,22,.6)";
-    m.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border-radius:12px;padding:16px;width:min(560px,100%);display:flex;flex-direction:column;gap:10px">' +
+    m.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border-radius:8px;padding:16px;width:min(560px,100%);display:flex;flex-direction:column;gap:10px">' +
       '<strong style="font-size:17px">Scan the barcode</strong>' +
-      '<video id="liveVideo" playsinline muted style="width:100%;max-height:60vh;background:#000;border-radius:8px"></video>' +
+      '<div style="position:relative;background:#000;border-radius:8px;overflow:hidden"><video id="liveVideo" playsinline muted style="display:block;width:100%;max-height:60vh;object-fit:cover"></video>' +
+      '<div aria-hidden="true" style="position:absolute;left:10%;right:10%;top:25%;bottom:25%;border:2px solid #fa530b;border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.25)"></div></div>' +
       '<div id="liveMsg" style="font-size:13px;color:var(--muted,#5b6876)">Starting camera…</div>' +
       '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
+      '<button type="button" class="btn ghost" id="liveTorch" hidden>Light on</button>' +
       '<button type="button" class="btn ghost" id="livePhoto">Use a photo instead</button><button type="button" class="btn ghost" id="liveClose">Cancel</button></div></div>';
     document.body.append(m);
     m.querySelector("#liveClose").addEventListener("click", closeCam);
     m.querySelector("#livePhoto").addEventListener("click", () => { closeCam(); document.getElementById("camFile").click(); });
+    m.addEventListener("click", e => { if (e.target === m) closeCam(); });
     return m;
   }
-  function closeCam() { const m = document.getElementById("liveCam"); if (m) m.hidden = true; try { if (reader) reader.reset(); } catch {} reader = null; }
+  function closeCam() {
+    const m = document.getElementById("liveCam"); if (m) m.hidden = true; scanning = false;
+    if (stream) { for (const t of stream.getTracks()) t.stop(); stream = null; }
+    const v = document.getElementById("liveVideo"); if (v) v.srcObject = null;
+  }
   const loadZX = () => window.ZXing ? Promise.resolve() : new Promise((res, rej) => { const s = document.createElement("script"); s.src = "zxing.min.js"; s.onload = res; s.onerror = rej; document.head.append(s); });
-  async function openCam() {
-    const m = camModal(), msg = m.querySelector("#liveMsg"); m.hidden = false; msg.textContent = "Starting camera…";
-    try {
+  // Returns a function that reads codes from the video: the built-in reader when the phone has one, else ZXing.
+  function makeDetector() {
+    if (detectorP) return detectorP;
+    detectorP = (async () => {
+      if ("BarcodeDetector" in window) {
+        try {
+          const want = ["code_128","code_39","code_93","codabar","itf","ean_13","ean_8","upc_a","upc_e","qr_code","data_matrix","pdf417","aztec"];
+          const have = await window.BarcodeDetector.getSupportedFormats(), formats = want.filter(f => have.includes(f));
+          if (formats.length) { const d = new window.BarcodeDetector({ formats }); return { kind: "native", read: async v => (await d.detect(v)).map(x => x.rawValue) }; }
+        } catch {}
+      }
       await loadZX();
-      const hints = new Map(); hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
-      reader = new ZXing.BrowserMultiFormatReader(hints, 120);
+      const F = ZXing.BarcodeFormat, hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [F.CODE_128, F.CODE_39, F.CODE_93, F.ITF, F.EAN_13, F.EAN_8, F.QR_CODE, F.DATA_MATRIX]);
+      const fast = new ZXing.MultiFormatReader(); fast.setHints(hints);
+      const hard = new ZXing.MultiFormatReader(); hard.setHints(new Map([...hints, [ZXing.DecodeHintType.TRY_HARDER, true]]));   // also tries the code turned a quarter
+      const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true });
+      let n = 0;
+      return { kind: "zxing", read: async v => {
+        const vw = v.videoWidth, vh = v.videoHeight; if (!vw || !vh) return [];
+        const sw = vw * .8, sh = vh * .5, sx = (vw - sw) / 2, sy = (vh - sh) / 2;   // the middle of the picture, where the frame is
+        const k = Math.min(1, 1000 / sw); cv.width = Math.round(sw * k); cv.height = Math.round(sh * k);
+        cx.drawImage(v, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+        const r = ++n % 3 ? fast : hard;   // mostly the quick read, every third try the thorough one
+        try { return [r.decodeWithState(new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(new ZXing.HTMLCanvasElementLuminanceSource(cv)))).getText()]; }
+        catch { return []; } finally { try { r.reset(); } catch {} }
+      } };
+    })().catch(e => { detectorP = null; throw e; });
+    return detectorP;
+  }
+  async function openCam() {
+    const m = camModal(), msg = m.querySelector("#liveMsg"), video = m.querySelector("#liveVideo"), torch = m.querySelector("#liveTorch");
+    m.hidden = false; msg.textContent = "Starting camera…"; torch.hidden = true;
+    try {
+      const [s, det] = await Promise.all([
+        navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } }),
+        makeDetector()]);
+      if (m.hidden) { for (const t of s.getTracks()) t.stop(); return; }   // closed while starting
+      stream = s; video.srcObject = s; await video.play();
+      const track = s.getVideoTracks()[0], caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (caps.focusMode && caps.focusMode.includes("continuous")) track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
+      if (caps.torch) { let on = false; torch.hidden = false; torch.textContent = "Light on";
+        torch.onclick = () => { on = !on; track.applyConstraints({ advanced: [{ torch: on }] }).catch(() => {}); torch.textContent = on ? "Light off" : "Light on"; }; }
+      msg.textContent = "Hold the barcode inside the orange frame. It is read by itself.";
       const types = new Set(((st.settings && st.settings.types) || []).map(t => norm(t.name)));
-      let last = "", lastAt = 0;
-      await reader.decodeFromConstraints({ audio: false, video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } }, m.querySelector("#liveVideo"), result => {
-        if (!result || m.hidden) return;
-        const code = clean(result.getText()); if (!code) return;
-        if (code === last && Date.now() - lastAt < 2500) return; last = code; lastAt = Date.now();
-        if (types.has(code)) {   // the type barcode: fill in the type and keep looking for the S/N
-          const sel = document.getElementById("model"), opt = [...sel.options].find(o => norm(o.value) === code);
-          if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true })); }
-          msg.textContent = `Type ${code} read. Now point the camera at the serial number barcode.`; return;
+      let last = "", lastAt = 0; scanning = true;
+      const tick = async () => {
+        if (!scanning || m.hidden) return;
+        let codes = []; try { codes = await det.read(video); } catch {}
+        for (const raw of codes) {
+          const code = clean(raw); if (!code) continue;
+          if (code === last && Date.now() - lastAt < 2500) continue; last = code; lastAt = Date.now();
+          if (types.has(code)) {   // the type barcode: fill in the type and keep looking for the S/N
+            const sel = document.getElementById("model"), opt = [...sel.options].find(o => norm(o.value) === code);
+            if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true })); }
+            msg.textContent = `Type ${code} read. Now point the camera at the serial number barcode.`; continue;
+          }
+          closeCam(); if (navigator.vibrate) navigator.vibrate(60);
+          const sn = document.getElementById("sn"); sn.value = code; sn.focus();
+          sn.dispatchEvent(new Event("input", { bubbles: true }));
+          setTimeout(() => sn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })), 50);
+          const hint = document.getElementById("camHint"); if (hint) hint.textContent = `Barcode read: ${code}.`;
+          return;
         }
-        closeCam(); if (navigator.vibrate) navigator.vibrate(60);
-        const sn = document.getElementById("sn"); sn.value = code; sn.focus();
-        sn.dispatchEvent(new Event("input", { bubbles: true }));
-        setTimeout(() => sn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })), 50);
-        const hint = document.getElementById("camHint"); if (hint) hint.textContent = `Barcode read: ${code}.`;
-      });
-      msg.textContent = "Hold the barcode steady in the picture. It is read by itself.";
+        setTimeout(tick, det.kind === "native" ? 60 : 30);
+      };
+      tick();
     } catch (e) {
+      closeCam(); m.hidden = false;
       msg.textContent = e && e.name === "NotAllowedError" ? "Camera access was blocked. Allow the camera for this site in the browser settings, or use a photo." : "No camera available here. Use a photo, type the S/N, or use a handheld barcode scanner.";
     }
   }
@@ -420,4 +473,5 @@
     if (!b || !(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) return;
     e.preventDefault(); e.stopImmediatePropagation(); openCam();
   }, true);
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) setTimeout(() => makeDetector().catch(() => {}), 3000);   // get the reader ready before the first scan
 })();
