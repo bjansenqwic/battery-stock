@@ -89,7 +89,7 @@
     const url = path.startsWith("http") ? path : "https://graph.microsoft.com/v1.0" + path;
     for (let i = 0; ; i++) {
       let res;
-      try { res = await fetch(url, { method: opts.method || "GET", headers: { Authorization: "Bearer " + await token(), "Content-Type": "application/json" }, body: opts.body ? JSON.stringify(opts.body) : undefined }); }
+      try { res = await fetch(url, { method: opts.method || "GET", headers: Object.assign({ Authorization: "Bearer " + await token(), "Content-Type": "application/json" }, opts.headers || {}), body: opts.body ? JSON.stringify(opts.body) : undefined }); }
       catch (e) { if (i < tries - 1) { await sleep(800 * 2 ** i); continue; } throw e; }
       if (res.ok) return res.status === 204 ? null : res.json().catch(() => null);
       if ([409, 423, 429, 500, 502, 503, 504].includes(res.status) && i < tries - 1) {
@@ -104,7 +104,8 @@
     async resolve() {
       if (!this._p) this._p = (async () => {
         const b64 = btoa(unescape(encodeURIComponent(CFG.workbookUrl.trim()))).replace(/=+$/, "").replace(/\//g, "_").replace(/\+/g, "-");
-        const item = await graph(`/shares/u!${b64}/driveItem?$select=id,name,webUrl,parentReference`);
+        // redeemSharingLink: opening the QWIC-wide link gives this colleague lasting access to the file
+        const item = await graph(`/shares/u!${b64}/driveItem?$select=id,name,webUrl,parentReference`, { headers: { Prefer: "redeemSharingLink" } });
         this.root = `/drives/${item.parentReference.driveId}/items/${item.id}/workbook`;
         this.webUrl = item.webUrl;
         const a = document.getElementById("xlOpen"); if (a && this.webUrl) { a.href = this.webUrl; a.hidden = false; }
