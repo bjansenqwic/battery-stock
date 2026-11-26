@@ -72,12 +72,16 @@
   // Installed app (Chrome "Install"): a full-page redirect to Microsoft can leave the app window and lose the sign-in state,
   // so there the sign-in opens in a small Microsoft window (popup) instead.
   const INSTALLED = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: window-controls-overlay)").matches || navigator.standalone === true;
+  // Phones and tablets: a sign-in popup often never opens or never comes back there, so they always use the normal
+  // redirect (it stays inside the installed app). Only an installed app on a computer uses the popup.
+  const MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const POPUP = INSTALLED && !MOBILE;
   // This page loaded inside that Microsoft sign-in window: do nothing, the app window reads the answer and closes it.
   const IN_POPUP = !!window.opener && window.opener !== window && /^msal\./.test(window.name || "");
   async function token() {
     try { return (await pca.acquireTokenSilent({ scopes: SCOPES, account })).accessToken; }
     catch (e) {
-      if (INSTALLED) return (await pca.acquireTokenPopup({ scopes: SCOPES, account })).accessToken;
+      if (POPUP) return (await pca.acquireTokenPopup({ scopes: SCOPES, account })).accessToken;
       await pca.acquireTokenRedirect({ scopes: SCOPES, account }); throw e;
     }
   }
@@ -306,9 +310,18 @@
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
     d.querySelector("#xlSignBtn").addEventListener("click", async () => {
-      if (!INSTALLED) return pca.loginRedirect({ scopes: SCOPES, prompt: "select_account" });
-      try { const r = await pca.loginPopup({ scopes: SCOPES, prompt: "select_account" }); pca.setActiveAccount(r.account); location.reload(); }
-      catch (e) { d.querySelector("#xlSignMsg").textContent = e && /popup_window_error|empty_window/.test(e.errorCode || "") ? "The sign-in window was blocked. Allow pop-ups for this app and try again." : "Sign-in failed: " + ((e && (e.errorMessage || e.message)) || "unknown error"); }
+      d.querySelector("#xlSignMsg").textContent = "";
+      try {
+        if (!POPUP) { await pca.loginRedirect({ scopes: SCOPES, prompt: "select_account" }); return; }
+        const r = await pca.loginPopup({ scopes: SCOPES, prompt: "select_account" }); pca.setActiveAccount(r.account); location.reload();
+      } catch (e) {
+        const code = (e && e.errorCode) || "";
+        // a blocked popup: fall back to the normal redirect
+        if (POPUP && /popup_window_error|empty_window|monitor_window_timeout/.test(code)) { try { await pca.loginRedirect({ scopes: SCOPES, prompt: "select_account" }); return; } catch {} }
+        // an earlier sign-in that never finished blocks a new one: clear it and try again
+        if (/interaction_in_progress/.test(code)) { for (const k of Object.keys(localStorage)) if (/interaction\.status/i.test(k)) localStorage.removeItem(k); for (const k of Object.keys(sessionStorage)) if (/interaction\.status/i.test(k)) sessionStorage.removeItem(k); d.querySelector("#xlSignMsg").textContent = "Please tap Sign in again."; return; }
+        d.querySelector("#xlSignMsg").textContent = "Sign-in failed: " + ((e && (e.errorMessage || e.message)) || "unknown error") + (code ? " (" + code + ")" : "");
+      }
     });
   }
   function addTopButtons() {
@@ -316,7 +329,7 @@
     const a = document.createElement("a"); a.id = "xlOpen"; a.className = "btn ghost"; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open Excel file"; a.hidden = true; a.style.textDecoration = "none";
     if (xl.webUrl) { a.href = xl.webUrl; a.hidden = false; }
     host.append(a);
-    if (!DEMO) { const b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.textContent = "Sign out"; b.addEventListener("click", () => INSTALLED ? pca.logoutPopup({ account }).catch(() => {}).finally(() => location.reload()) : pca.logoutRedirect({ account })); host.append(b); }
+    if (!DEMO) { const b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.textContent = "Sign out"; b.addEventListener("click", () => POPUP ? pca.logoutPopup({ account }).catch(() => {}).finally(() => location.reload()) : pca.logoutRedirect({ account })); host.append(b); }
     else { const s = document.createElement("span"); s.className = "pill out"; s.textContent = "Demo: data stays on this device"; s.title = "Fill in config.js to use the shared Excel file."; host.prepend(s); }
   }
   async function start() {
