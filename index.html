@@ -553,6 +553,8 @@ td.dim{color:var(--muted)}
   }
   // The type is set by the app: from the battery's record, the serial number or the label.
   // Only when none of those tells the type is the (hidden) type field shown, limited to the possible types.
+  // the one type a serial number stands for, or "" when it doesn't say
+  const snType = sn => { const d = detectType(norm(sn)); if (d) return d; const r = snRule(norm(sn)); return r && r.types.length===1 ? r.types[0] : ""; };
   function autofillType() {
     const sn=norm($("sn").value);
     S.typeChoices=null; S.typeNote="";
@@ -560,9 +562,10 @@ td.dim{color:var(--muted)}
     const prev=S.bats.get(docId(sn)), det=detectType(sn), rule = det ? null : snRule(sn);
     const names=S.cfg.types.map(t=>t.name), inList = n => names.some(x=>norm(x)===norm(n));
     let want="", src="";
-    if (prev && prev.model && inList(prev.model)) { want=prev.model; src="record"; }
-    else if (det) { want=det; src="sn"; }
-    else if (rule && rule.types.length===1) { want=rule.types[0]; src="sn"; }
+    // the serial number decides first: then the type is fixed and can't be changed; the battery's record comes second
+    const fromSn = det || (rule && rule.types.length===1 ? rule.types[0] : "");
+    if (fromSn) { want=fromSn; src="sn"; }
+    else if (prev && prev.model && inList(prev.model)) { want=prev.model; src="record"; }
     if (want && !inList(want)) { S.typeNote=`The serial number points to type ${want}, which is not in your type list. Add it under Settings, or choose the type below.`; want=""; }
     if (!want && rule && rule.types.length>1) { S.typeChoices=rule.types.filter(inList); S.typeNote=`This serial number belongs to ${rule.label}, but doesn't say which type. Choose the type from the Art # on the label.`; }
     const kept = !want && ["chosen","label"].includes(S.typeSource) && $("model").value && (!S.typeChoices || S.typeChoices.includes($("model").value)) ? $("model").value : "";
@@ -1195,7 +1198,7 @@ td.dim{color:var(--muted)}
       el("div",{}, el("div",{class:"hint",text:"Serial number"}), el("h2",{text:b.sn})),
       el("div",{style:"display:flex;gap:6px;flex-wrap:wrap"}, pill(b.status), b.condition?condPill(b.condition):null),
       el("dl",{class:"kv"},
-        el("dt",{text:"Type"}), el("dd",{}, S.canWrite===false ? (b.model||"–") : el("div",{class:"editrow"},
+        el("dt",{text:"Type"}), el("dd",{}, snType(b.sn) ? el("span",{title:"Set by the serial number; it can't be changed"}, snType(b.sn), el("span",{class:"hint",text:" · from the S/N"})) : S.canWrite===false ? (b.model||"–") : el("div",{class:"editrow"},
           (()=>{ const sel=el("select",{id:"drawerType","aria-label":"Type"}); const names=[...new Set([...S.cfg.types.map(t=>t.name), b.model].filter(Boolean))]; sel.append(el("option",{value:"",text:"–"}), ...names.map(n=>el("option",{value:n,text:n}))); sel.value=b.model||""; return sel; })(),
           el("button",{class:"btn ghost",type:"button",text:"Save",onclick:async()=>{ const v=$("drawerType").value; if (!v) { toast("Choose a type.","err"); return; } if (v===(b.model||"")) return; try { const d=JSON.parse(JSON.stringify(b)); d.model=v; d.updatedAt=Date.now(); await S.db.collection("batteries").doc(S.openId).set(d); toast("Type changed to "+(v||"–")); } catch { toast("Couldn't save the type.","err"); } }}))),
         el("dt",{text:"For"}), el("dd",{text:b.purpose||"–"}),
@@ -1248,7 +1251,7 @@ td.dim{color:var(--muted)}
   for (const id of ["model","cond","purpose","inBox","reasonIn","reasonOut","reasonOther","loc"]) { $(id).addEventListener("change", () => $(id).classList.remove("missing")); $(id).addEventListener("input", () => $(id).classList.remove("missing")); }
   $("sn").addEventListener("input",()=>{ autofillType(); updateSnStatus(); renderSuggest(); });
   $("sn").addEventListener("blur",()=>setTimeout(hideSuggest,120)); $("sn").addEventListener("focus",renderSuggest);
-  $("model").addEventListener("change",()=>{ S.typeSource = $("modelWrap").hidden ? "label" : "chosen"; updateSnStatus(); });   /* hidden field: set by a scanned type barcode */ $("cond").addEventListener("change",updateSnStatus); $("purpose").addEventListener("change",updateSnStatus);
+  $("model").addEventListener("change",()=>{ if (S.typeSource==="sn") { autofillType(); return; } S.typeSource = $("modelWrap").hidden ? "label" : "chosen"; updateSnStatus(); });   /* hidden field: set by a scanned type barcode */ $("cond").addEventListener("change",updateSnStatus); $("purpose").addEventListener("change",updateSnStatus);
   $("genBtn").addEventListener("click",generateShelves);
   $("stIdleBtn").addEventListener("click",()=>{ $("idleModal").hidden=false; renderIdle(); });
   $("idleClose").addEventListener("click",()=>{ $("idleModal").hidden=true; }); $("crateClose").addEventListener("click",()=>{ $("crateModal").hidden=true; crateAsk=null; });
