@@ -65,7 +65,12 @@ header.top .topbtns{flex:1 1 100%}   /* Dark mode and the settings icon always o
 .setmenu button{border:0;background:transparent;color:var(--ink);text-align:left;font:600 14px var(--f-sans);padding:10px 12px;border-radius:6px;cursor:pointer}
 .setmenu button:hover,.setmenu button:focus-visible{background:var(--sunken)}
 header.top .who{position:absolute;top:16px;right:18px}   /* the signed-in person: pinned to the top-right corner */
-.avatar{width:38px;height:38px;border-radius:50%;background:#fa530b;color:#ffffff;border:2px solid #ffffff;display:inline-flex;align-items:center;justify-content:center;font:700 15px var(--f-sans);letter-spacing:.02em;flex:none;cursor:default;user-select:none}
+.avatar{width:38px;height:38px;border-radius:50%;background:#fa530b;color:#ffffff;border:2px solid #ffffff;display:inline-flex;align-items:center;justify-content:center;font:700 15px var(--f-sans);letter-spacing:.02em;flex:none;cursor:pointer;user-select:none;padding:0}
+.whomenu{position:absolute;right:0;top:calc(100% + 6px);z-index:46;background:var(--surface);color:var(--ink);border:1px solid var(--edge);border-radius:8px;padding:10px;min-width:220px;max-width:calc(100vw - 32px);display:flex;flex-direction:column;gap:2px;text-align:left;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.whomenu .nm{font-weight:600;font-size:14px}
+.whomenu .em{font-size:12px;color:var(--muted);word-break:break-all;margin-bottom:6px}
+.whomenu button{border:0;background:transparent;color:var(--ink);text-align:left;font:600 14px var(--f-sans);padding:9px 10px;border-radius:6px;cursor:pointer;border-top:1px solid var(--line)}
+.whomenu button:hover,.whomenu button:focus-visible{background:var(--sunken)}
 header.top .btn.ghost{color:var(--hdr-ink);border-color:var(--hdr-ink);background:transparent}
 header.top .btn.ghost:hover{border-color:var(--hdr-ink)}
 .themesw{display:inline-flex;align-items:center;gap:10px;background:none;border:0;padding:4px 2px;cursor:pointer;color:var(--hdr-ink);font:600 14px var(--f-sans)}
@@ -1290,7 +1295,14 @@ td.dim{color:var(--muted)}
     if (user) {
       S.me = await user.me(); S.canEdit = S.me.canEdit; S.isAdmin = !!S.me.isOwner; $("setWrap").hidden = !S.isAdmin; S.canWrite = await user.can("data.write");
       if (S.canWrite === false) { banner("You have view-only access: you can look up batteries but not check them in or out."); $("submitBtn").disabled = true; }
-      if (S.me.id) { { const nm=S.me.name||"You", ini=nm.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?"; $("who").replaceChildren(el("span",{class:"avatar",text:ini,title:"Signed in: "+nm,"aria-label":"Signed in: "+nm,role:"img"})); } S.profiles[S.me.id] = { name: S.me.name }; }
+      if (S.me.id) { { const nm=S.me.name||"You", ini=nm.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join("").toUpperCase()||"?"; // account icon: tap it for your name and, in the Excel version, Sign out
+        const menu = el("div",{class:"whomenu",role:"menu",hidden:""}, el("div",{class:"nm",text:nm}), S.me.email ? el("div",{class:"em",text:S.me.email}) : null,
+          typeof window.bsSignOut==="function" ? el("button",{type:"button",role:"menuitem",text:"Sign out",onclick:()=>window.bsSignOut()}) : null);
+        const av = el("button",{type:"button",class:"avatar",text:ini,title:"Signed in: "+nm,"aria-label":"Account: "+nm,"aria-haspopup":"menu","aria-expanded":"false"});
+        const shut = () => { menu.hidden = true; av.setAttribute("aria-expanded","false"); };
+        av.addEventListener("click", e => { e.stopPropagation(); menu.hidden = !menu.hidden; av.setAttribute("aria-expanded", String(!menu.hidden)); });
+        document.addEventListener("click", e => { if (!$("who").contains(e.target)) shut(); }); document.addEventListener("keydown", e => { if (e.key==="Escape") shut(); });
+        $("who").replaceChildren(av, menu); } S.profiles[S.me.id] = { name: S.me.name }; }
     }
     if (!db) { S.loaded = true; banner("Couldn't connect to the Excel file."); renderLedger(); return; }
     S.db = db;
