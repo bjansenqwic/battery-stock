@@ -307,7 +307,7 @@
     d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:8px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
       '<h1 style="margin:0;font-size:24px">Battery Stock</h1><p style="margin:0;color:var(--muted,#5b6876)">Sign in with your work Microsoft account to check batteries in and out.</p>' +
       '<button type="button" id="xlSignBtn" style="border:0;border-radius:999px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0a0a0a);color:var(--accent-ink,#fff)">Sign in with Microsoft</button>' +
-      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-26b</div></div>';
+      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-26c</div></div>';
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
     d.querySelector("#xlSignBtn").addEventListener("click", async () => {
@@ -330,7 +330,8 @@
     const a = document.createElement("a"); a.id = "xlOpen"; a.className = "btn ghost"; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Open Excel file"; a.hidden = true; a.style.textDecoration = "none";
     if (xl.webUrl) { a.href = xl.webUrl; a.hidden = false; }
     host.append(a);
-    if (!DEMO) { const b = document.createElement("button"); b.type = "button"; b.className = "btn ghost"; b.textContent = "Sign out"; b.addEventListener("click", () => POPUP ? pca.logoutPopup({ account }).catch(() => {}).finally(() => location.reload()) : pca.logoutRedirect({ account })); host.append(b); }
+    // Sign out sits in the account menu (the round icon top right); the page calls this
+    if (!DEMO) window.bsSignOut = () => POPUP ? pca.logoutPopup({ account }).catch(() => {}).finally(() => location.reload()) : pca.logoutRedirect({ account });
     else { const s = document.createElement("span"); s.className = "pill out"; s.textContent = "Demo: data stays on this device"; s.title = "Fill in config.js to use the shared Excel file."; host.prepend(s); }
   }
   async function start() {
