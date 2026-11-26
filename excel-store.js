@@ -306,8 +306,8 @@
     d.style.cssText = "position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bg,#eef1f4)";
     d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:8px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
       '<h1 style="margin:0;font-size:24px">Battery Stock</h1><p style="margin:0;color:var(--muted,#5b6876)">Sign in with your work Microsoft account to check batteries in and out.</p>' +
-      '<button type="button" id="xlSignBtn" style="border:0;border-radius:999px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0f5bd8);color:#fff">Sign in with Microsoft</button>' +
-      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div></div>';
+      '<button type="button" id="xlSignBtn" style="border:0;border-radius:999px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0a0a0a);color:var(--accent-ink,#fff)">Sign in with Microsoft</button>' +
+      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-26b</div></div>';
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
     d.querySelector("#xlSignBtn").addEventListener("click", async () => {
@@ -337,6 +337,9 @@
     if (IN_POPUP) { document.body.style.visibility = "hidden"; return; }
     if (!DEMO) {
       try {
+        // A sign-in that never finished (for example a popup that never came back) blocks every new one; unless we are
+        // just back from Microsoft, clear that leftover first.
+        if (!/[#&?](code|error|state)=/.test(location.hash + location.search)) for (const st of [localStorage, sessionStorage]) for (const k of Object.keys(st)) if (/interaction\.status/i.test(k)) st.removeItem(k);
         const redirectUri = location.origin + location.pathname.replace(/index\.html$/, "");
         pca = new msal.PublicClientApplication({ auth: { clientId: CFG.clientId, authority: "https://login.microsoftonline.com/" + (CFG.tenantId || "organizations"), redirectUri }, cache: { cacheLocation: "localStorage", temporaryCacheLocation: "localStorage", storeAuthStateInCookie: true } });
         const r = await pca.handleRedirectPromise();
