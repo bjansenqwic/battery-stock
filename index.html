@@ -65,6 +65,15 @@ header.top .topbtns{flex:1 1 100%}   /* Dark mode and the settings icon always o
 .setmenu button{border:0;background:transparent;color:var(--ink);text-align:left;font:600 14px var(--f-sans);padding:10px 12px;border-radius:6px;cursor:pointer}
 .setmenu button:hover,.setmenu button:focus-visible{background:var(--sunken)}
 header.top .who{position:absolute;top:16px;right:18px}   /* the signed-in person: pinned to the top-right corner */
+/* top bar: title and view buttons on the left; account, light/dark switch and settings stacked on the right */
+header.top{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:14px 16px;padding-right:18px}
+.hleft{display:contents}
+header.top .brand{grid-column:1;grid-row:1}
+header.top .topbtns{grid-column:1;grid-row:2}
+.hright{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:center;gap:12px}
+@media (max-width:600px){header.top .topbtns{grid-column:1 / -1}.hright{grid-row:1}.views button{padding:8px 11px;font-size:13px}}
+header.top .hright .who{position:relative;top:auto;right:auto}
+.hright .setmenu{left:auto;right:0}
 .avatar{width:38px;height:38px;border-radius:50%;background:#fa530b;color:#ffffff;border:2px solid #ffffff;display:inline-flex;align-items:center;justify-content:center;font:700 15px var(--f-sans);letter-spacing:.02em;flex:none;cursor:pointer;user-select:none;padding:0}
 .whomenu{position:absolute;right:0;top:calc(100% + 6px);z-index:46;background:var(--surface);color:var(--ink);border:1px solid var(--edge);border-radius:8px;padding:10px;min-width:220px;max-width:calc(100vw - 32px);display:flex;flex-direction:column;gap:2px;text-align:left;box-shadow:0 6px 20px rgba(0,0,0,.18)}
 .whomenu .nm{font-weight:600;font-size:14px}
@@ -79,6 +88,14 @@ header.top .btn.ghost:hover{border-color:var(--hdr-ink)}
 .themesw[aria-checked="true"] .track{background:#fa530b;border-color:#fa530b}
 .themesw[aria-checked="true"] .knob{background:#ffffff}
 .themesw[aria-checked="true"] .knob{transform:translateX(20px)}
+/* the switch shows L (light) and D (dark): the knob carries the current mode, the free side the other one */
+.themesw{padding:0}
+.themesw .track{width:56px;height:30px}
+.themesw .knob{top:3px;left:3px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--f-sans);color:var(--hdr-bg);z-index:1}
+.themesw[aria-checked="true"] .knob{transform:translateX(26px);color:#0a0a0a}
+.themesw .tl,.themesw .td{position:absolute;top:50%;transform:translateY(-50%);font:700 12px/1 var(--f-sans)}
+.themesw .tl{left:9px;color:#ffffff}
+.themesw .td{right:9px;color:var(--hdr-ink)}
 @media (prefers-reduced-motion:reduce){.themesw .track,.themesw .knob{transition:none}}
 @media (max-width:520px){header.top .brand{gap:12px}header.top .brand > div{padding-left:12px}header.top .logo{width:64px}h1{font-size:20px}}
 .who{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px}
@@ -295,12 +312,14 @@ td.dim{color:var(--muted)}
 </style>
 
 <div class="wrap" data-view="scan">
-  <header class="top">
+  <header class="top"><div class="hleft">
     <div class="brand"><svg class="logo" viewBox="0 0 200 51" role="img" aria-label="QWIC" xmlns="http://www.w3.org/2000/svg"><path d="M65.5945 50.3906H119.766C124.598 50.3906 128.497 46.4912 128.497 41.6596V0.170685H117.587V37.2875C117.587 38.4954 116.615 39.467 115.407 39.467H101.215V0.170685H90.304V39.467H73.9316V0.170685H63.0211V50.3775H65.6076L65.5945 50.3906Z" fill="currentColor"/><path d="M147.89 0H136.979V50.2068H147.89V0Z" fill="currentColor"/><path d="M167.255 13.2475C167.255 12.0396 168.227 11.0681 169.435 11.0681H200V0.144409H165.076C160.244 0.144409 156.345 4.05697 156.345 8.87545V41.6202C156.345 46.4518 160.244 50.3512 165.076 50.3512H200V39.4407H169.435C168.227 39.4407 167.255 38.4691 167.255 37.2612V13.2475Z" fill="currentColor"/><path d="M8.73104 0.118164C3.89942 0.118164 0 4.03072 0 8.84921V41.5939C0 46.4255 3.89942 50.325 8.73104 50.325H35.6857L24.7752 39.4144H13.1031C11.8952 39.4144 10.9236 38.4429 10.9236 37.235V13.2082C10.9236 12.0003 11.8952 11.0287 13.1031 11.0287H41.4888C42.6968 11.0287 43.6683 12.0003 43.6683 13.2082V33.585L54.5788 44.4955V8.84921C54.5788 4.01759 50.6663 0.118164 45.8478 0.118164H8.73104Z" fill="currentColor"/><path d="M26.2718 35.1474L39.9264 48.802C40.7798 49.6554 42.4604 50.3512 43.6683 50.3512H52.4256C53.6335 50.3512 53.9223 49.6554 53.0689 48.802L39.4144 35.1474C38.5609 34.294 36.8804 33.5981 35.6856 33.5981H26.9283C25.7204 33.5981 25.4316 34.294 26.285 35.1474" fill="#F47920"/></svg><div>
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><nav class="views" aria-label="View"><button type="button" data-view="scan" aria-pressed="true">Check in/out</button><button type="button" data-view="stats" aria-pressed="false">Overview</button><button type="button" data-view="ledger" aria-pressed="false">Stock &amp; map</button></nav><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false" aria-label="Dark mode"><span id="themeLbl">Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuCrates">Boxes</button></div></div><div class="who" id="who"></div></div>
+    <div class="topbtns"><nav class="views" aria-label="View"><button type="button" data-view="scan" aria-pressed="true">Check in/out</button><button type="button" data-view="stats" aria-pressed="false">Overview</button><button type="button" data-view="ledger" aria-pressed="false">Stock &amp; map</button></nav></div>
+    </div>
+    <div class="hright"><div class="who" id="who"></div><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false" aria-label="Dark mode" title="Light or dark mode"><span class="track" aria-hidden="true"><span class="tl">L</span><span class="td">D</span><span class="knob" id="themeLbl">L</span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuCrates">Boxes</button></div></div></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -1338,7 +1357,7 @@ td.dim{color:var(--muted)}
     const isDark=()=>(root.getAttribute("data-theme") || (mq.matches ? "dark" : "light"))==="dark";
     let v=""; try { v=localStorage.getItem("bw.theme")||""; } catch {}
     if (v==="light" || v==="dark") root.setAttribute("data-theme", v);
-    const paint=()=>{ sw.setAttribute("aria-checked", String(isDark())); $("themeLbl").textContent = isDark() ? "Dark mode" : "Light mode"; };   // the label names the mode you are in
+    const paint=()=>{ sw.setAttribute("aria-checked", String(isDark())); $("themeLbl").textContent = isDark() ? "D" : "L"; sw.title = isDark() ? "Dark mode (tap for light)" : "Light mode (tap for dark)"; };   // the label names the mode you are in
     paint(); mq.addEventListener("change", paint);
     sw.addEventListener("click",()=>{ const nv=isDark() ? "light" : "dark"; root.setAttribute("data-theme", nv); try { localStorage.setItem("bw.theme", nv); } catch {} paint(); }); }
   try { const t=localStorage.getItem("bw.tab"); if (t && ["stock","map","all","log","loc"].includes(t)) S.tab=t; } catch {}
