@@ -87,6 +87,9 @@ button.stat:hover{border-color:var(--ink)}
 .stat.idle.warn .v{color:var(--danger)}
 .pill.charge{background:var(--accent-soft);color:var(--ink)}
 #crateBody{display:flex;flex-direction:column;gap:12px}
+.stackrow{display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid var(--line)}
+.boxchips{display:flex;flex-wrap:wrap;gap:6px}
+.boxchip{border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:13px;background:var(--sunken)}
 .cbox{border:1px solid var(--edge);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .cbox h3{margin:0;font-size:15px}
 .crow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -269,7 +272,7 @@ td.dim{color:var(--muted)}
       <h1>Battery Stock</h1>
       <p class="sub">Check batteries in and out by serial number. Everyone sees the same stock from the shared Excel file.</p>
     </div></div>
-    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuCrates">Crates</button></div></div><div class="who" id="who"></div></div>
+    <div class="topbtns"><button type="button" id="themeSw" class="themesw" role="switch" aria-checked="false"><span>Dark mode</span><span class="track" aria-hidden="true"><span class="knob"></span></span></button><div class="setwrap" id="setWrap" hidden><button class="gearbtn" id="settingsBtn" type="button" title="Settings" aria-label="Settings" aria-haspopup="menu" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1.08 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3.2"/></svg></button><div class="setmenu" id="setMenu" role="menu" hidden><button type="button" role="menuitem" id="setMenuTypes">Battery types</button><button type="button" role="menuitem" id="setMenuCrates">Boxes</button></div></div><div class="who" id="who"></div></div>
   </header>
 
   <div id="banner" class="banner" hidden></div>
@@ -432,8 +435,8 @@ td.dim{color:var(--muted)}
 </div>
 <div class="modal" id="crateModal" hidden>
   <div class="box">
-    <h2>Crates</h2>
-    <div class="hint" style="margin-top:-6px">Crates stand on S1 and S2. Each crate is one storage location; adding or removing a crate adds or removes that location. The history log is always kept.</div>
+    <h2>Boxes</h2>
+    <div class="hint" style="margin-top:-6px">Boxes stand in stacks on side 1 and side 2, box 1 at the bottom and at most 6 high. Each box is one storage location named after its sticker, e.g. 1-A-3. Put a box on top of a stack or take the top box off; the history log is always kept.</div>
     <div id="crateBody"></div>
     <div class="rowbtns"><button class="btn ghost" id="crateClose" type="button">Close</button></div>
   </div>
@@ -517,9 +520,9 @@ td.dim{color:var(--muted)}
   const contentsOf = r => r.used ? [r.types.size>1 ? "mixed types" : [...r.types][0], r.conds.size>1 ? "mixed status" : [...r.conds][0]].filter(Boolean).join(" · ") : "empty";
   const fits = (r, type, cond) => r.used===0 || ((!type || (r.types.size===1 && r.types.has(type))) && r.conds.size===1 && r.conds.has(cond));
   // Shelves this battery may go on: same type and status, or empty; part-filled ones first so shelves fill up.
-  const ZONE_NAME = { defect: "Broken / to repair", marketing: "Marketing", any: "Temporary" };
+  const ZONE_NAME = { defect: "Broken bin", marketing: "Marketing", any: "Temporary" };
   const zoneFor = (cond, purpose) => BAD.has(cond) ? "defect" : purpose === "Marketing" ? "marketing" : "";
-  const levelOf = name => { const m = String(name).match(/^S\d+-([A-Z])-/i); return m ? m[1].toUpperCase() : "Z"; };
+  const levelOf = name => { const m = String(name).match(/^\d-[A-Z]-(\d+)$/i); return m ? m[1].padStart(2,"0") : "99"; };   // lower boxes and shelf levels first
   // Best spots for this battery. Defect batteries go to the broken area and Marketing batteries to the
   // marketing area. Others go to a spot holding the same type and status (fullest first, so spots fill
   // up), then to an empty spot (lowest level first), and the temporary area last.
@@ -964,7 +967,7 @@ td.dim{color:var(--muted)}
       let tr;
       if (S.tab==="loc") {
         const free=r.cap ? r.cap-r.used : null, full=r.cap && r.used>=r.cap;
-        tr=el("tr",{}, el("td",{class:"mono",text:r.name+(r.crate?" (crate "+r.crate+")":"")+(r.listed?"":" (not in the list)")}), el("td",{}, r.only ? ZONE_NAME[r.only]+" area" : r.types.size>1||r.conds.size>1 ? el("span",{class:"pill bad",text:contentsOf(r)}) : contentsOf(r)), el("td",{class:"mono",text:r.used}), el("td",{class:"mono",text:r.cap||"–"}),
+        tr=el("tr",{}, el("td",{class:"mono",text:r.name+(r.crate?" (box "+r.crate+")":"")+(r.listed?"":" (not in the list)")}), el("td",{}, r.only ? ZONE_NAME[r.only]+" area" : r.types.size>1||r.conds.size>1 ? el("span",{class:"pill bad",text:contentsOf(r)}) : contentsOf(r)), el("td",{class:"mono",text:r.used}), el("td",{class:"mono",text:r.cap||"–"}),
           el("td",{}, free==null ? "–" : full ? el("span",{class:"pill bad",text: free<0 ? "Over by "+(-free) : "Full"}) : el("span",{class:"pill in",text:free+" free"})),
           el("td",{}, r.cap ? el("div",{class:"bar"+(full?" full":"")}, el("i",{style:"width:"+Math.min(100,Math.round(r.used/r.cap*100))+"%"})) : ""));
         tr.addEventListener("click",()=>{ $("q").value=r.name; setTab("stock"); });
@@ -989,8 +992,8 @@ td.dim{color:var(--muted)}
     if (S.tab==="log") refreshProfiles(shown.map(r=>r.by));
   }
   // ---------- map of the container ----------
-  // Spots named S<wall>-<level>-<position> are placed on their wall: S1 along the top, S2 down the right,
-  // S3 along the bottom. Several levels at one position are drawn as a stack, top level first.
+  // Drawn like the container plan: side 1 along the top and side 2 down the right hold stacks of boxes, side 3 along
+  // the bottom holds the broken bin (BRK) and the shelves 3-A (with MKT and TMP) and 3-B. Top box or level first.
   function renderMap() {
     const box = $("mapView");
     if (!S.cfg.locations.length) { box.replaceChildren(el("div",{class:"empty"}, el("strong",{text:"No locations yet"}), "Storage locations are set up by an admin.")); return; }
@@ -999,12 +1002,13 @@ td.dim{color:var(--muted)}
     const sn = norm($("sn").value), cur = sn ? S.bats.get(docId(sn)) : null, t = sn ? dirFor(sn) : null;
     const rec = sn && t==="in" && $("model").value && $("cond").value && $("purpose").value ? suggestShelves(sn, $("model").value, $("cond").value, $("purpose").value) : [];
     const recSet = new Set(rec.slice(0,5).map(r=>r.name)), best = rec[0] && rec[0].name, here = cur && cur.status==="in" ? cur.location : "";
-    const walls = { "1":new Map(), "2":new Map(), "3":new Map() }, zones = [], other = [];
+    // locations are named <side>-<stack or shelf>-<box or level>, e.g. 1-A-3 or 3-B-8; MKT, TMP and BRK are areas
+    const groups = { "1":new Map(), "2":new Map(), "3":new Map() }, zone = {}, other = [];
+    for (const [side, , stacks] of BOX_STACKS) for (const st of stacks) groups[side].set(st.split("-")[1], []);   // stacks show even without boxes
     for (const r of rows) {
-      const m = r.name.match(/^S(\d+)-([A-Z])-(\d+)$/i);
-      if (r.only) zones.push(r);
-      else if (/^S\d+-K\d+$/i.test(r.name) && walls[r.name.match(/^S(\d+)/i)[1]]) { const w = r.name.match(/^S(\d+)-K(\d+)$/i); walls[w[1]].set(1000 + +w[2], [{ ...r, level:"K" }]); }   // crates: after the shelves on their wall
-      else if (m && walls[m[1]]) { const k = +m[3]; if (!walls[m[1]].has(k)) walls[m[1]].set(k, []); walls[m[1]].get(k).push({ ...r, level: m[2].toUpperCase() }); }
+      const m = r.name.match(/^(\d)-([A-Z])-(\d+)$/i);
+      if (r.only && !zone[r.name.toUpperCase()]) zone[r.name.toUpperCase()] = r;
+      else if (m && groups[m[1]]) { const k = m[2].toUpperCase(); if (!groups[m[1]].has(k)) groups[m[1]].set(k, []); groups[m[1]].get(k).push({ ...r, level: +m[3] }); }
       else other.push(r);
     }
     const spot = (r, extra="", slim=false) => {
@@ -1014,31 +1018,29 @@ td.dim{color:var(--muted)}
       const type = r.only ? ZONE_NAME[r.only] : !r.used ? "empty" : r.types.size > 1 ? "mixed types" : ([...r.types][0] || "no type");
       const st = r.only ? (r.used ? `${r.used} batter${r.used===1?"y":"ies"}` : "empty") : r.used ? (r.conds.size > 1 ? "mixed status" : [...r.conds][0] || "") : "";
       const pct = r.cap ? Math.min(100, Math.round(r.used / r.cap * 100)) : 0;
-      const b = el("button", { type:"button", class:cls, title:`${r.name}${r.crate ? " (crate "+r.crate+")" : ""}: ${type}${st ? ", "+st : ""}${r.cap ? `, ${r.used} of ${r.cap}` : ""}` },
+      const b = el("button", { type:"button", class:cls, title:`${r.name}${r.crate ? " (box "+r.crate+")" : ""}: ${type}${st ? ", "+st : ""}${r.cap ? `, ${r.used} of ${r.cap}` : ""}` },
         slim ? null : el("span",{class:"nm",text:r.name}), el("span",{class:"ty",text:slim && r.used && st ? type+" · "+st : type}), st && !r.only && !slim ? el("span",{class:"st",text:st}) : null,
         r.only ? el("span",{class:"st",text:st}) : el("span",{class:"ft"}, el("span",{class:"bar"+(full?" full":"")}, el("i",{style:`width:${pct}%`})), r.cap ? `${r.used}/${r.cap}` : `${r.used}`));
       b.addEventListener("click", () => { $("q").value = r.name; setTab("stock"); });
       return b;
     };
-    const column = list => {   // one position: its levels as a stack, top level first
-      list.sort((a,b) => b.level.localeCompare(a.level));
-      if (list.length === 1) return el("div",{class:"stack"}, spot(list[0]));
-      const pos = list[0].name.replace(/-[A-Z]-/i, " · section ");
-      return el("div",{class:"stack section"}, el("div",{class:"sh",text:pos}), ...list.map(r => el("div",{class:"lvl"}, el("b",{text:r.level}), spot(r, "", true))));
+    const column = (side, key, extra=[]) => {   // a stack of boxes or a shelf, top first
+      const list = (groups[side].get(key) || []).slice().sort((a,b) => b.level - a.level);
+      return el("div",{class:"stack section"}, el("div",{class:"sh",text:`${side}-${key}`}),
+        ...list.map(r => el("div",{class:"lvl"}, el("b",{text:r.level}), spot(r, "", true))),
+        list.length ? null : el("div",{class:"hint",style:"font-size:11px;padding:4px 2px",text: side==="3" ? "No levels" : "No boxes yet"}), ...extra);
     };
-    const wallRow = (w, label) => el("div",{}, el("div",{class:"walltag",text:label}),
-      el("div",{class:"wallrow"}, ...[...walls[w].keys()].sort((a,b)=>a-b).map(k => column(walls[w].get(k)))));
-    const plan = el("div",{class:"plan"},
+    const keys = side => [...groups[side].keys()].sort();
+    for (const [k, r] of Object.entries(zone)) if (!["MKT","TMP","BRK"].includes(k)) other.push(r);
+    const plan = el("div",{class:"plan",style:"grid-template-columns:minmax(0,1fr) 190px"},
       el("div",{class:"door"}, el("span",{text:"Entrance"})),
-      el("div",{style:"grid-column:1 / -1"}, walls["1"].size ? wallRow("1","S1 · top wall") : null),
-      el("div",{class:"walk"}, "Keep the walkway clear"),
-      el("div",{style:"grid-row:2 / span 2;grid-column:2"}, el("div",{class:"walltag",text:"S2 · right wall"}),
-        el("div",{class:"wallcol"}, ...[...walls["2"].keys()].sort((a,b)=>a-b).map(k => column(walls["2"].get(k))))),
-      el("div",{style:"grid-column:1;display:flex;flex-direction:column;gap:12px"},
-        zones.length ? el("div",{style:"flex:0 0 auto"}, el("div",{class:"walltag",text:"Dedicated areas"}),
-          el("div",{class:"wallrow",style:"width:"+(zones.length*104)+"px"}, ...zones.map(z => el("div",{class:"stack"}, spot(z))))) : null,
-        walls["3"].size ? el("div",{style:"flex:1;min-width:0"}, el("div",{class:"walltag",text:"S3 · bottom wall"}),
-          el("div",{class:"wallrow"}, ...[...walls["3"].keys()].sort((a,b)=>a-b).map(k => column(walls["3"].get(k))))) : null));
+      el("div",{}, el("div",{class:"walltag",text:"Side 1 · top wall"}), el("div",{class:"wallrow"}, ...keys("1").map(k => column("1", k)))),
+      el("div",{style:"grid-row:1 / span 2;grid-column:2"}, el("div",{class:"walltag",text:"Side 2 · right wall"}), el("div",{class:"wallcol"}, ...keys("2").map(k => column("2", k)))),
+      el("div",{class:"walk"}, "Walkway · check-in/out tablet by the entrance"),
+      el("div",{style:"grid-column:1 / -1"}, el("div",{class:"walltag",text:"Side 3 · bottom wall"}),
+        el("div",{class:"wallrow"},
+          zone.BRK ? el("div",{class:"stack",style:"flex:0 0 130px"}, spot(zone.BRK)) : null,
+          ...keys("3").map(k => column("3", k, k==="A" ? [zone.MKT, zone.TMP].filter(Boolean).map(z => el("div",{style:"margin-top:4px"}, spot(z))) : [])))));
     const kids = [el("div",{class:"mapwrap"}, plan)];
     if (other.length) kids.push(el("div",{class:"mapwrap"}, el("div",{class:"walltag",text:"Other spots"}), el("div",{class:"wallrow",style:"flex-wrap:wrap"}, ...other.map(r => el("div",{class:"stack",style:"flex:0 0 110px"}, spot(r))))));
     kids.push(el("div",{class:"legend"},
@@ -1080,82 +1082,92 @@ td.dim{color:var(--muted)}
     catch { toast("Couldn't save. Check your connection and try again.","err"); }
   }
 
-  // ---------- crates on S1 and S2 ----------
-  // A crate is one storage location (S1-K01, S2-K03 …) whose maximum comes from its size. Adding a crate adds that
-  // location; removing it removes the location and, after "are you sure?", checks out the batteries still in it.
-  const CRATE_SIDES = [["S1","S1 · top wall"],["S2","S2 · right wall"]];
-  const crateNo = nm => { const m = String(nm).match(/^S\d+-K(\d+)$/i); return m ? +m[1] : 0; };
-  let crateAsk = null;   // the crate waiting for confirmation
-  function openCrates() { if (!S.isAdmin) { toast("Only admins can change crates.","err"); return; } crateAsk = null; $("crateModal").hidden = false; renderCrates(true); }
+  // ---------- boxes on side 1 and side 2 ----------
+  // Boxes stand in stacks (1-A … 1-D on side 1, 2-A and 2-B on side 2), box 1 at the bottom, at most 6 high; stacks
+  // are lettered from the entrance inward. Each box is one storage location named after its sticker (1-A-3 = side 1,
+  // stack A, third box from the bottom) and its maximum comes from its size. The admin puts a box on top of a stack or
+  // takes the top box off; taking off a box that still holds batteries asks first and then checks them out. The log stays.
+  const BOX_STACKS = [["1", "Side 1 · top wall", ["1-A","1-B","1-C","1-D"]], ["2", "Side 2 · right wall", ["2-A","2-B"]]], STACK_MAX = 6;
+  const boxNo = nm => { const m = String(nm).match(/^\d-[A-Z]-(\d+)$/i); return m ? +m[1] : 0; };
+  const boxesIn = st => S.cfg.locations.filter(l => l.crate && l.name.toUpperCase().startsWith(st+"-")).sort((a,b) => boxNo(a.name) - boxNo(b.name));
+  let crateAsk = null;   // the box waiting for confirmation
+  function openCrates() { if (!S.isAdmin) { toast("Only admins can change boxes.","err"); return; } crateAsk = null; $("crateModal").hidden = false; renderCrates(true); }
   function crateUse() { const m = new Map(); for (const b of S.bats.values()) if (b.status==="in" && b.location) { if (!m.has(b.location)) m.set(b.location, []); m.get(b.location).push(b); } return m; }
   async function saveCrates(part, okMsg) {
-    if (!S.isAdmin || !S.db) { toast("Only admins can change crates.","err"); return false; }
+    if (!S.isAdmin || !S.db) { toast("Only admins can change boxes.","err"); return false; }
     try { await putSettings(part); if (okMsg) toast(okMsg); return true; }
     catch { toast("Couldn't save. Check your connection and try again.","err"); return false; }
   }
   function renderCrates(force) {
     const box = $("crateBody"), act = document.activeElement;
     if (!force && box.contains(act) && /^(INPUT|SELECT|TEXTAREA)$/.test(act.tagName)) return;   // don't wipe what the admin is typing
-    const sizes = S.cfg.crateSizes || [], crates = S.cfg.locations.filter(l => l.crate), use = crateUse(), kids = [];
-    const sizeRows = sizes.map(sz => { const n = crates.filter(c => c.crate===sz.name).length;
+    const sizes = S.cfg.crateSizes || [], boxes = S.cfg.locations.filter(l => l.crate), use = crateUse(), kids = [];
+    const plural = n => n + " box" + (n===1 ? "" : "es");
+    const sizeRows = sizes.map(sz => { const n = boxes.filter(c => c.crate===sz.name).length;
       const cap = el("input",{type:"number",min:"1",max:"999",value:String(sz.cap||""),"aria-label":"Maximum for "+sz.name,style:"width:90px"});
       cap.addEventListener("change", async () => { const v = Math.max(0, parseInt(cap.value,10) || 0); if (v < 1) { toast("The maximum must be at least 1.","err"); return; }
         await saveCrates({ crateSizes: sizes.map(x => x.name===sz.name ? {name:x.name, cap:v} : x), locations: S.cfg.locations.map(l => l.crate===sz.name ? Object.assign({}, l, {cap:v}) : l) },
-          `${sz.name} now holds ${v}` + (n ? `; ${n} crate${n===1?"":"s"} updated` : "")); });
-      return el("div",{class:"crow"}, el("b",{text:sz.name}), el("span",{class:"hint",text:"Max"}), cap, el("span",{class:"hint",text:n+" crate"+(n===1?"":"s")}),
-        el("button",{class:"btn ghost",type:"button",text:"Remove",onclick:async () => { if (n) { toast(`${n} crate${n===1?" still uses":"s still use"} ${sz.name}. Remove ${n===1?"it":"them"} first.`,"err"); return; }
+          `${sz.name} now holds ${v}` + (n ? `; ${plural(n)} updated` : "")); });
+      return el("div",{class:"crow"}, el("b",{text:sz.name}), el("span",{class:"hint",text:"Max"}), cap, el("span",{class:"hint",text:plural(n)}),
+        el("button",{class:"btn ghost",type:"button",text:"Remove",onclick:async () => { if (n) { toast(`${plural(n)} still use ${sz.name}. Remove ${n===1?"it":"them"} first.`,"err"); return; }
           if (await saveCrates({ crateSizes: sizes.filter(x => x.name!==sz.name) }, sz.name+" removed")) renderCrates(true); }})); });
     const nName = el("input",{placeholder:"Size name, e.g. Large","aria-label":"New size name"}), nCap = el("input",{type:"number",min:"1",max:"999",placeholder:"Max","aria-label":"Maximum batteries",style:"width:90px"});
     const addSize = el("button",{class:"btn ghost",type:"button",text:"Add size",onclick:async () => { const nm = nName.value.trim(), v = parseInt(nCap.value,10) || 0;
       if (!nm || v < 1) { toast("Enter a size name and the maximum number of batteries.","err"); return; }
       if (sizes.some(x => x.name.toLowerCase()===nm.toLowerCase())) { toast("That size already exists.","err"); return; }
       if (await saveCrates({ crateSizes: [...sizes, {name:nm, cap:v}] }, `Size ${nm} added`)) renderCrates(true); }});
-    kids.push(el("section",{class:"cbox"}, el("h3",{text:"Crate sizes"}), ...(sizeRows.length ? sizeRows : [el("div",{class:"hint",text:"No sizes yet. Add one, for example Small with max 6 and Large with max 12."})]), el("div",{class:"crow add"}, nName, nCap, addSize)));
-    for (const [side, label] of CRATE_SIDES) {
-      const mine = crates.filter(c => c.name.toUpperCase().startsWith(side+"-")).sort((a,b) => crateNo(a.name) - crateNo(b.name));
-      const rows = mine.map(c => { const inIt = use.get(c.name) || [];
-        const row = el("div",{class:"crow"}, el("b",{class:"mono",text:c.name}), el("span",{text:c.crate}), el("span",{class:"mono hint",text:`${inIt.length}/${c.cap||"–"}`}),
-          el("button",{class:"btn danger",type:"button",text:"Remove",onclick:() => { if (inIt.length) { crateAsk = c.name; renderCrates(true); } else removeCrate(c.name, []); }}));
-        if (crateAsk!==c.name) return row;
-        const rs = el("select",{"aria-label":"Reason for checking out"}, el("option",{value:"",text:"Choose a reason…"}), ...REASONS.out.map(r => el("option",{value:r,text:r})));
-        const note = el("input",{placeholder:"Note (optional)","aria-label":"Note"});
-        rs.addEventListener("change", () => rs.classList.remove("missing"));
-        return el("div",{class:"cask"}, row,
-          el("div",{class:"warnbox",role:"alertdialog","aria-label":"Remove crate "+c.name},
-            el("strong",{text:`Are you sure? ${c.name} still holds ${inIt.length} batter${inIt.length===1?"y":"ies"}.`}),
-            el("div",{class:"hint",text:"Removing the crate checks these batteries out. Their history stays in the log."}),
-            el("div",{class:"mono",style:"font-size:13px;word-break:break-word",text:inIt.map(b => b.sn).join(", ")}),
+    kids.push(el("section",{class:"cbox"}, el("h3",{text:"Box sizes"}), ...(sizeRows.length ? sizeRows : [el("div",{class:"hint",text:"No sizes yet. Add one, for example Small with max 6 and Large with max 12."})]), el("div",{class:"crow add"}, nName, nCap, addSize)));
+    for (const [, label, stacks] of BOX_STACKS) {
+      const rows = stacks.map(st => {
+        const list = boxesIn(st), top = list[list.length-1], inTop = top ? (use.get(top.name) || []) : [];
+        const chips = list.length ? el("div",{class:"boxchips"}, ...list.map(b => { const n = (use.get(b.name) || []).length;
+            return el("span",{class:"boxchip",title:`${b.name}: ${b.crate}, ${n} of ${b.cap||"–"}`}, el("b",{class:"mono",text:b.name}), ` ${b.crate} · ${n}/${b.cap||"–"}`); }))
+          : el("div",{class:"hint",text:"No boxes yet."});
+        const head = el("div",{class:"crow"}, el("b",{class:"mono",text:st}), el("span",{class:"hint",text:`${list.length}/${STACK_MAX} boxes`}),
+          top ? el("button",{class:"btn danger",type:"button",text:"Remove top box "+top.name,onclick:() => { if (inTop.length) { crateAsk = top.name; renderCrates(true); } else removeCrate(top.name, []); }}) : null);
+        const parts = [head, chips];
+        if (top && crateAsk===top.name) {
+          const rs = el("select",{"aria-label":"Reason for checking out"}, el("option",{value:"",text:"Choose a reason…"}), ...REASONS.out.map(r => el("option",{value:r,text:r})));
+          const note = el("input",{placeholder:"Note (optional)","aria-label":"Note"});
+          rs.addEventListener("change", () => rs.classList.remove("missing"));
+          parts.push(el("div",{class:"warnbox",role:"alertdialog","aria-label":"Remove box "+top.name},
+            el("strong",{text:`Are you sure? ${top.name} still holds ${inTop.length} batter${inTop.length===1?"y":"ies"}.`}),
+            el("div",{class:"hint",text:"Removing the box checks these batteries out. Their history stays in the log."}),
+            el("div",{class:"mono",style:"font-size:13px;word-break:break-word",text:inTop.map(b => b.sn).join(", ")}),
             el("div",{class:"grid2"}, rs, note),
             el("div",{class:"rowbtns"}, el("button",{class:"btn ghost",type:"button",style:"font-size:14px;padding:9px 14px",text:"Cancel",onclick:() => { crateAsk = null; renderCrates(true); }}),
-              el("button",{class:"btn out",type:"button",style:"font-size:14px;padding:9px 14px",text:`Yes, remove and check out ${inIt.length}`,onclick:async e => {
+              el("button",{class:"btn out",type:"button",style:"font-size:14px;padding:9px 14px",text:`Yes, remove and check out ${inTop.length}`,onclick:async e => {
                 if (!rs.value) { rs.classList.add("missing"); toast("Choose a reason for checking out.","err"); return; }
-                e.currentTarget.disabled = true; await removeCrate(c.name, inIt, rs.value, note.value.trim()); }}))));
+                e.currentTarget.disabled = true; await removeCrate(top.name, inTop, rs.value, note.value.trim()); }}))));
+        }
+        if (list.length < STACK_MAX) {
+          const sz = el("select",{"aria-label":"Box size for "+st}, el("option",{value:"",text:sizes.length ? "Choose a size…" : "Add a size first"}), ...sizes.map(x => el("option",{value:x.name,text:`${x.name} (max ${x.cap})`})));
+          const nm = `${st}-${list.length + 1}`;
+          parts.push(el("div",{class:"crow add"}, sz, el("button",{class:"btn ghost",type:"button",text:"Put box "+nm+" on top",onclick:async () => { const x = sizes.find(y => y.name===sz.value); if (!x) { toast("Choose a box size.","err"); return; }
+            if (S.cfg.locations.some(l => l.name.toUpperCase()===nm)) { toast(nm+" already exists as a location.","err"); return; }
+            if (await saveCrates({ locations: [...S.cfg.locations, {name:nm, cap:x.cap, only:"", crate:x.name}] }, `Box ${nm} added (${x.name}, max ${x.cap})`)) renderCrates(true); }})));
+        } else parts.push(el("div",{class:"hint",text:"This stack is full (6 boxes)."}));
+        return el("div",{class:"stackrow"}, ...parts);
       });
-      const sz = el("select",{"aria-label":"Crate size for "+side}, el("option",{value:"",text:sizes.length ? "Choose a size…" : "Add a size first"}), ...sizes.map(x => el("option",{value:x.name,text:`${x.name} (max ${x.cap})`})));
-      const add = el("button",{class:"btn ghost",type:"button",text:"Add crate to "+side,onclick:async () => { const x = sizes.find(y => y.name===sz.value); if (!x) { toast("Choose a crate size.","err"); return; }
-        const used = new Set(mine.map(c => crateNo(c.name))); let n = 1; while (used.has(n)) n++;
-        const nm = `${side}-K${String(n).padStart(2,"0")}`;
-        if (S.cfg.locations.some(l => l.name.toUpperCase()===nm)) { toast(nm+" already exists as a location.","err"); return; }
-        if (await saveCrates({ locations: [...S.cfg.locations, {name:nm, cap:x.cap, only:"", crate:x.name}] }, `Crate ${nm} added (${x.name}, max ${x.cap})`)) renderCrates(true); }});
-      kids.push(el("section",{class:"cbox"}, el("h3",{text:label}), ...(rows.length ? rows : [el("div",{class:"hint",text:"No crates here yet."})]), el("div",{class:"crow add"}, sz, add)));
+      kids.push(el("section",{class:"cbox"}, el("h3",{text:label}), ...rows));
     }
     box.replaceChildren(...kids);
   }
-  // Check out what is still in the crate (each battery gets its own check-out in the log), then remove the crate's location.
+  // Check out what is still in the box (each battery gets its own check-out in the log), then remove the box's location.
   async function removeCrate(nm, inIt, reason, note) {
     if (!S.isAdmin || !S.db) return;
     let done = 0;
     for (const b of inIt) {
       const id = docId(b.sn), prev = S.bats.get(id); if (!prev || prev.status!=="in") continue;
-      const at = Date.now(), why = [`Crate ${nm} removed`, note].filter(Boolean).join(" · ");
+      const at = Date.now(), why = [`Box ${nm} removed`, note].filter(Boolean).join(" · ");
       const mv = { t:"out", at, loc: prev.location||nm, model: prev.model||"", reason, note: why, ref: prev.ref||"", condition: prev.condition||"", inBox: prev.inBox||"", purpose: prev.purpose||"", by: S.me && S.me.id || null };
       const hist = (Array.isArray(prev.history) ? prev.history.slice() : []).concat(mv).sort((a,b) => a.at - b.at);
       const next = Object.assign(JSON.parse(JSON.stringify(prev)), { status:"out", location:"", lastLocation: mv.loc, reason, note: why, lastOut: at, updatedAt: at, updatedBy: mv.by, history: hist.slice(-HISTORY_CAP) });
       try { await S.db.collection("batteries").doc(id).set(next); done++; }
-      catch { toast(`Stopped at ${b.sn}: ${done} checked out, the crate is still there. Try again.`,"err"); crateAsk = null; renderCrates(true); return; }
+      catch { toast(`Stopped at ${b.sn}: ${done} checked out, the box is still there. Try again.`,"err"); crateAsk = null; renderCrates(true); return; }
     }
     crateAsk = null;
-    if (await saveCrates({ locations: S.cfg.locations.filter(l => l.name!==nm) }, `Crate ${nm} removed` + (done ? `; ${done} batter${done===1?"y":"ies"} checked out` : ""))) renderCrates(true);
+    if (await saveCrates({ locations: S.cfg.locations.filter(l => l.name!==nm) }, `Box ${nm} removed` + (done ? `; ${done} batter${done===1?"y":"ies"} checked out` : ""))) renderCrates(true);
   }
 
   // ---------- drawer ----------
