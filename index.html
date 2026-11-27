@@ -13,7 +13,7 @@
 <script src="config.js"></script>
 <script src="defaults.js"></script>
 <script src="msal-browser.min.js"></script>
-<script src="excel-store.js?v=20261126d"></script>
+<script src="excel-store.js?v=20261127a"></script>
 </head>
 <body>
 <title>Battery Stock</title>
@@ -929,7 +929,7 @@ td.dim{color:var(--muted)}
   }
   // Reads the printed "SN" and "Art #" on the label. Needs the viewer's OK the first time.
   async function readLabelText(file) {
-    if (!S.sample) return null;
+    if (!S.sample) return window.bsOCR ? window.bsOCR(file) : null;   // outside Claude: the built-in text reader
     const lim = await S.sample.limits().catch(() => null);
     if (!lim || !lim.images) return null;
     if (lim.images.mediaTypes && file.type && !lim.images.mediaTypes.includes(file.type)) return null;
@@ -952,18 +952,21 @@ td.dim{color:var(--muted)}
     try {
       const types = new Set(S.cfg.types.map(t => norm(t.name)));
       const setType = code => { const opt = [...$("model").options].find(o => o.value && norm(o.value) === code); if (opt) { $("model").value = opt.value; return true; } return false; };
-      let ai = null, aiFailed = false;
+      let ai = null, aiFailed = false, settled = false;
+      $("camHint").textContent = "Reading the printed label…";
       const aiP = readLabelText(f).then(v => (ai = v), () => { aiFailed = true; return null; });
-      const r = await decodeImage(f, k => { if (k % 6 === 0) $("camHint").textContent = "Reading barcode and label… looking closer"; }, t => { const c = cleanCode(t); return !!c && !types.has(c); }, S.sample ? 9000 : 15000);
+      const barP = decodeImage(f, k => { if (!settled && k % 6 === 0) $("camHint").textContent = "Reading the label and the barcode… looking closer"; }, t => { const c = cleanCode(t); return !!c && !types.has(c); }, S.sample ? 9000 : 8000).catch(e => ({ text: "", skipped: [], err: e }));
+      // letters and digits first: the printed S/N wins; the barcode is the backup
+      await Promise.race([aiP, new Promise(res => setTimeout(res, 25000))]);
+      const r = ai && ai.sn ? await Promise.race([barP, new Promise(res => setTimeout(() => res({ text: "", skipped: [] }), 2500))]) : await barP;
       let typeCode = r.skipped.map(cleanCode).find(c => types.has(c)) || "";
-      let text = r.text ? cleanCode(r.text) : "", source = text ? "barcode" : "";
-      const prev = text ? S.bats.get(docId(text)) : null;
-      // Wait for the printed text when we still need the S/N or the type.
-      if (!text || (!typeCode && !(prev && prev.model))) { $("camHint").textContent = "Reading the printed label…"; await Promise.race([aiP, new Promise(res => setTimeout(res, 25000))]); }
-      let note = "";
+      const bar = r.text ? cleanCode(r.text) : "";
+      let text = "", source = "", note = "";
+      if (ai && ai.sn) { text = ai.sn; source = ai.unsure ? "unsure" : "text"; if (bar && bar !== text) note = ` The barcode reads ${bar}; the printed number was used.`; }
+      else if (bar) { text = bar; source = "barcode"; }
+      else if (r.err && !ai) throw r.err;
+      settled = true;   // the barcode reader may still be busy; it must not overwrite the result
       if (ai) {
-        if (!text && ai.sn) { text = ai.sn; source = ai.unsure ? "unsure" : "text"; }
-        else if (text && ai.sn && ai.sn !== text) note = ` The printed number reads ${ai.sn}; the barcode was used.`;
         if (ai.art && !typeCode) { if (types.has(ai.art)) typeCode = ai.art; else note += ` Type ${ai.art} on the label is not in your type list. Add it under Settings.`; }
       }
       if (typeCode) { S.typeChoices = null; fillSelects(); setType(typeCode); }
