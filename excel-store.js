@@ -307,7 +307,7 @@
     d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:8px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
       '<h1 style="margin:0;font-size:24px">Battery Stock</h1><p style="margin:0;color:var(--muted,#5b6876)">Sign in with your work Microsoft account to check batteries in and out.</p>' +
       '<button type="button" id="xlSignBtn" style="border:0;border-radius:999px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0a0a0a);color:var(--accent-ink,#fff)">Sign in with Microsoft</button>' +
-      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-27a</div></div>';
+      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-27b</div></div>';
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
     d.querySelector("#xlSignBtn").addEventListener("click", async () => {
@@ -379,6 +379,9 @@
     return ocrP;
   }
   const looksLikeSn = s => s.length >= 8 && s.length <= 32 && /[A-Z]/.test(s) && /\d{3}/.test(s);
+  // BA130 serial numbers always go on with a D (often read as 0 or O); a B at the start is sometimes read as 8
+  const fixSn = s => String(s || "").replace(/^8A(?=\d{3})/, "BA").replace(/^BA130[0O]/, "BA130D");
+  const isAwb = c => /^\d{10,12}$/.test(String(c || "").replace(/[-\s]/g, ""));   // a shipping (AWB) number, not an S/N
   // how: "label" = printed after S/N or Serial, "family" = a known S/N start, "guess" = the likeliest code on the label
   function parseLabel(text) {
     const lines = String(text || "").toUpperCase().split(/\n+/).map(l => l.trim()).filter(Boolean);
@@ -390,11 +393,11 @@
     }
     const tokens = lines.flatMap(l => l.split(/\s+/)).map(t => t.replace(/[^A-Z0-9]/g, "")).filter(Boolean);
     const am = lines.join(" ").match(/ART\s*(?:#|NR\.?|NO\.?)?\s*[:.]?\s*(BA0{2}\d{3})/); art = am ? am[1] : (tokens.find(t => /^BA0{2}\d{3}$/.test(t)) || "");
-    const fam = t => { const m = t.match(/(BA\d{3}|WDHL|XWHL|BDLG|BPYT)/); return m && m.index <= 2 ? t.slice(m.index) : ""; };   // a known S/N start, also when a stray character was read in front of it
+    const fam = t => { const m = fixSn(t).match(/(BA\d{3}|WDHL|XWHL|BDLG|BPYT)/); t = fixSn(t); return m && m.index <= 2 ? t.slice(m.index) : ""; };   // a known S/N start, also when a stray character was read in front of it
     if (sn && how === "label" && fam(sn)) sn = fam(sn);
     if (!sn) { const t = tokens.map(fam).find(t => t && looksLikeSn(t) && t !== art); if (t) { sn = t; how = "family"; } }
     if (!sn) { const t = tokens.filter(t => looksLikeSn(t) && t !== art).sort((a, b) => b.length - a.length)[0]; if (t) { sn = t; how = "guess"; } }
-    return { sn: norm(sn), art: norm(art), how };
+    return { sn: fixSn(norm(sn)), art: norm(art), how };
   }
   async function toCanvas(src, max, turn) {   // a picture, scaled down to max px on its long side, optionally turned a quarter
     const bmp = await createImageBitmap(src), k = Math.min(1, max / Math.max(bmp.width, bmp.height));
@@ -503,7 +506,7 @@
       msg.textContent = "Hold the label inside the orange frame. The printed S/N is read first; the barcode is the backup.";
       const types = new Set(((st.settings && st.settings.types) || []).map(t => norm(t.name)));
       const setType = code => { const sel = document.getElementById("model"), opt = [...sel.options].find(o => norm(o.value) === code); if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true })); } };
-      let last = "", lastAt = 0, done = false, ocrOk = true, ocrSn = "", bar = ""; const startAt = Date.now(); scanning = true;
+      let last = "", lastAt = 0, done = false, ocrOk = true, ocrSn = "", bar = "", awb = false; const startAt = Date.now(); scanning = true;
       const finish = (code, how) => {   // fill in the S/N and go on with the form
         if (done) return; done = true; closeCam(); if (navigator.vibrate) navigator.vibrate(60);
         const sn = document.getElementById("sn"); sn.value = code; sn.focus();
@@ -535,7 +538,8 @@
         for (const raw of codes) {
           const code = clean(raw); if (!code) continue;
           if (types.has(code)) { if (code !== last) { setType(code); msg.textContent = `Type ${code} read. Now hold the serial number in the frame.`; } last = code; lastAt = Date.now(); continue; }
-          bar = code;
+          if (looksLikeSn(code)) bar = fixSn(code);
+          else if (isAwb(code) && !awb) { awb = true; msg.textContent = "This barcode is a shipping (AWB) number, not the S/N. Hold the printed serial number in the frame."; }
         }
         if (bar && (!ocrOk || bar === ocrSn || Date.now() - startAt > 3000)) { finish(bar, "barcode"); return; }
         setTimeout(tick, det.kind === "native" ? 60 : 30);
