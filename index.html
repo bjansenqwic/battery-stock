@@ -505,7 +505,7 @@ td.dim{color:var(--muted)}
     in: ["New delivery", "Return from customer", "Return from service / repair", "Return from R&D", "Stock correction", "Other"],
     out: ["To customer", "To service / repair", "RMA / warranty", "To R&D / testing", "To production / assembly", "Recycling / disposal", "Stock correction", "Other"],
   };
-  const CONDITIONS = ["New", "Refurbished A grade", "Refurbished B grade", "Refurbished discoloured", "To be checked", "Defect"];
+  const CONDITIONS = ["New", "Refurbished A grade", "Refurbished B grade", "Refurbished discoloured", "To be checked", "To be charged", "Defect"];
   const BAD = new Set(["Defect"]);
   const PURPOSES = ["Stock", "Technical", "R&D", "Marketing"];
   const HISTORY_CAP = 500;
@@ -558,16 +558,18 @@ td.dim{color:var(--muted)}
     if (m) { const d = m[1].length >= 3 ? m[1].slice(0,3) : m[1].padStart(3,"0"); return { types: ["BA00"+d] }; }
     const f = SN_FAMILIES.find(x => x.re.test(sn)); return f ? { types: f.types, label: f.label } : null;
   }
-  function occupancy() { const m=new Map(); for (const b of S.bats.values()) if (b.status==="in" && b.location) m.set(b.location,(m.get(b.location)||0)+1); return m; }
+  // Brekr scooter batteries (B4000 …) are about three times the size of a bike battery: they take three places in a box or on a shelf
+  const typeSize = model => /^B4000/i.test(String(model||"").trim()) ? 3 : 1;
+  function occupancy() { const m=new Map(); for (const b of S.bats.values()) if (b.status==="in" && b.location) m.set(b.location,(m.get(b.location)||0)+typeSize(b.model)); return m; }
   const natural = (a,b) => a.localeCompare(b, undefined, {numeric:true, sensitivity:"base"});
   // What sits on each shelf now: count, types, statuses. exceptSn leaves out the battery being scanned.
   function shelfInfo(exceptSn) {
     const m=new Map();
-    for (const l of S.cfg.locations) m.set(l.name, {name:l.name, cap:l.cap||0, only:l.only||"", crate:l.crate||"", used:0, types:new Set(), conds:new Set(), listed:true});
+    for (const l of S.cfg.locations) m.set(l.name, {name:l.name, cap:l.cap||0, only:l.only||"", crate:l.crate||"", used:0, n:0, types:new Set(), conds:new Set(), listed:true});
     for (const b of S.bats.values()) {
       if (b.status!=="in" || !b.location || b.sn===exceptSn) continue;
-      let r=m.get(b.location); if (!r) { r={name:b.location, cap:0, only:"", used:0, types:new Set(), conds:new Set(), listed:false}; m.set(b.location,r); }
-      r.used++; if (b.model) r.types.add(b.model); if (b.condition) r.conds.add(b.condition);
+      let r=m.get(b.location); if (!r) { r={name:b.location, cap:0, only:"", used:0, n:0, types:new Set(), conds:new Set(), listed:false}; m.set(b.location,r); }
+      r.used += typeSize(b.model); r.n++; /* used = room taken, n = number of batteries */ if (b.model) r.types.add(b.model); if (b.condition) r.conds.add(b.condition);
     }
     return [...m.values()].sort((a,b)=>natural(a.name,b.name));
   }
@@ -582,7 +584,7 @@ td.dim{color:var(--muted)}
   // marketing area. Others go to a spot holding the same type and status (fullest first, so spots fill
   // up), then to an empty spot (lowest level first), and the temporary area last.
   function suggestShelves(sn, type, cond, purpose) {
-    const open = shelfInfo(sn).filter(r => r.listed && (!r.cap || r.used < r.cap));
+    const open = shelfInfo(sn).filter(r => r.listed && (!r.cap || r.used + typeSize(type) <= r.cap));
     const zone = zoneFor(cond, purpose);
     if (zone && open.some(r => r.only === zone)) return open.filter(r => r.only === zone);
     const normal = open.filter(r => !r.only && fits(r, type, cond))
@@ -795,7 +797,7 @@ td.dim{color:var(--muted)}
     };
     const btn=$("submitBtn"); btn.disabled=true;
     try {
-      const L = t==="in" && loc ? S.cfg.locations.find(l=>l.name===loc) : null, usedNow = L ? (occupancy().get(loc)||0) + (prev && prev.status==="in" && prev.location===loc ? 0 : 1) : 0;
+      const L = t==="in" && loc ? S.cfg.locations.find(l=>l.name===loc) : null, usedNow = L ? (occupancy().get(loc)||0) + (prev && prev.status==="in" && prev.location===loc ? 0 : typeSize(model)) : 0;
       const shelfNow = L ? shelfInfo(sn).find(r=>r.name===loc) : null, mixes = spotProblem(shelfNow, model, condition, purpose);
       const ref0 = S.db.collection("batteries").doc(id), before = prev ? JSON.parse(JSON.stringify(prev)) : null;
       await ref0.set(next);
@@ -1032,7 +1034,7 @@ td.dim{color:var(--muted)}
       let tr;
       if (S.tab==="loc") {
         const free=r.cap ? r.cap-r.used : null, full=r.cap && r.used>=r.cap;
-        tr=el("tr",{}, el("td",{class:"mono",text:r.name+(r.crate?" (box "+r.crate+")":"")+(r.listed?"":" (not in the list)")}), el("td",{}, r.only ? ZONE_NAME[r.only]+" area" : r.types.size>1||r.conds.size>1 ? el("span",{class:"pill bad",text:contentsOf(r)}) : contentsOf(r)), el("td",{class:"mono",text:r.used}), el("td",{class:"mono",text:r.cap||"–"}),
+        tr=el("tr",{}, el("td",{class:"mono",text:r.name+(r.crate?" (box "+r.crate+")":"")+(r.listed?"":" (not in the list)")}), el("td",{}, r.only ? ZONE_NAME[r.only]+" area" : r.types.size>1||r.conds.size>1 ? el("span",{class:"pill bad",text:contentsOf(r)}) : contentsOf(r)), el("td",{class:"mono",text:r.n}), el("td",{class:"mono",text:r.cap||"–"}),
           el("td",{}, free==null ? "–" : full ? el("span",{class:"pill bad",text: free<0 ? "Over by "+(-free) : "Full"}) : el("span",{class:"pill in",text:free+" free"})),
           el("td",{}, r.cap ? el("div",{class:"bar"+(full?" full":"")}, el("i",{style:"width:"+Math.min(100,Math.round(r.used/r.cap*100))+"%"})) : ""));
         tr.addEventListener("click",()=>{ $("q").value=r.name; setTab("stock"); });
@@ -1196,7 +1198,7 @@ td.dim{color:var(--muted)}
     for (const [, label, stacks] of BOX_STACKS) {
       const rows = stacks.map(st => {
         const list = boxesIn(st), top = list[list.length-1], inTop = top ? (use.get(top.name) || []) : [];
-        const chips = list.length ? el("div",{class:"boxchips"}, ...list.map(b => { const n = (use.get(b.name) || []).length;
+        const chips = list.length ? el("div",{class:"boxchips"}, ...list.map(b => { const n = (use.get(b.name) || []).reduce((t, x) => t + typeSize(x.model), 0);   // room taken
             return el("span",{class:"boxchip",title:`${b.name}: ${b.crate}, ${n} of ${b.cap||"–"}`}, el("b",{class:"mono",text:b.name}), ` ${b.crate} · ${n}/${b.cap||"–"}`); }))
           : el("div",{class:"hint",text:"No boxes yet."});
         const head = el("div",{class:"crow"}, el("b",{class:"mono",text:st}), el("span",{class:"hint",text:`${list.length}/${STACK_MAX} boxes`}),
