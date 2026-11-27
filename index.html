@@ -13,7 +13,7 @@
 <script src="config.js"></script>
 <script src="defaults.js"></script>
 <script src="msal-browser.min.js"></script>
-<script src="excel-store.js?v=20261127a"></script>
+<script src="excel-store.js?v=20261127b"></script>
 </head>
 <body>
 <title>Battery Stock</title>
@@ -928,8 +928,13 @@ td.dim{color:var(--muted)}
     return out;
   }
   // Reads the printed "SN" and "Art #" on the label. Needs the viewer's OK the first time.
+  // S/N clean-up for what is read from a label: BA130 serial numbers always go on with a D (often read as 0 or O),
+  // and a B at the start is sometimes read as 8
+  const fixSn = s => String(s || "").replace(/^8A(?=\d{3})/, "BA").replace(/^BA130[0O]/, "BA130D");
+  const snLike = c => c.length >= 8 && /[A-Z]/.test(c) && /\d{3}/.test(c);   // every S/N has letters and digits
+  const isAwb = c => /^\d{10,12}$/.test(String(c || "").replace(/[-\s]/g, ""));   // a shipping (AWB) number, not an S/N
   async function readLabelText(file) {
-    if (!S.sample) return window.bsOCR ? window.bsOCR(file) : null;   // outside Claude: the built-in text reader
+    if (!S.sample) return window.bsOCR ? window.bsOCR(file).then(o => o && Object.assign(o, { sn: fixSn(o.sn) })) : null;   // outside Claude: the built-in text reader
     const lim = await S.sample.limits().catch(() => null);
     if (!lim || !lim.images) return null;
     if (lim.images.mediaTypes && file.type && !lim.images.mediaTypes.includes(file.type)) return null;
@@ -942,7 +947,7 @@ td.dim{color:var(--muted)}
       'Copy the characters exactly as printed, without spaces. If part of the serial number is hard to read (scratched, blurred, covered), still give your best reading and set "sn_unsure": true. ' +
       'Use "" only when a value is not on the label at all. Example: {"sn": "WDHL12FCE211200457", "art": "BA00070", "sn_unsure": false}',
       { images: [file, ...crops] });
-    return out && typeof out === "object" ? { sn: norm(out.sn || ""), art: norm(out.art || ""), unsure: !!out.sn_unsure } : null;
+    return out && typeof out === "object" ? { sn: fixSn(norm(out.sn || "")), art: norm(out.art || ""), unsure: !!out.sn_unsure } : null;
   }
   let reading = false;
   async function readPicture(f) {
@@ -955,14 +960,14 @@ td.dim{color:var(--muted)}
       let ai = null, aiFailed = false, settled = false;
       $("camHint").textContent = "Reading the printed label…";
       const aiP = readLabelText(f).then(v => (ai = v), () => { aiFailed = true; return null; });
-      const barP = decodeImage(f, k => { if (!settled && k % 6 === 0) $("camHint").textContent = "Reading the label and the barcode… looking closer"; }, t => { const c = cleanCode(t); return !!c && !types.has(c); }, S.sample ? 9000 : 8000).catch(e => ({ text: "", skipped: [], err: e }));
+      const barP = decodeImage(f, k => { if (!settled && k % 6 === 0) $("camHint").textContent = "Reading the label and the barcode… looking closer"; }, t => { const c = cleanCode(t); return !!c && !types.has(c) && snLike(c); }, S.sample ? 9000 : 8000).catch(e => ({ text: "", skipped: [], err: e }));
       // letters and digits first: the printed S/N wins; the barcode is the backup
       await Promise.race([aiP, new Promise(res => setTimeout(res, 25000))]);
       const r = ai && ai.sn ? await Promise.race([barP, new Promise(res => setTimeout(() => res({ text: "", skipped: [] }), 2500))]) : await barP;
       let typeCode = r.skipped.map(cleanCode).find(c => types.has(c)) || "";
-      const bar = r.text ? cleanCode(r.text) : "";
-      let text = "", source = "", note = "";
-      if (ai && ai.sn) { text = ai.sn; source = ai.unsure ? "unsure" : "text"; if (bar && bar !== text) note = ` The barcode reads ${bar}; the printed number was used.`; }
+      const bar = r.text ? fixSn(cleanCode(r.text)) : "";
+      let text = "", source = "", note = r.skipped.some(isAwb) ? " The barcode on this label is a shipping (AWB) number, so it was not used." : "";
+      if (ai && ai.sn) { text = ai.sn; source = ai.unsure ? "unsure" : "text"; if (bar && bar !== text) note += ` The barcode reads ${bar}; the printed number was used.`; }
       else if (bar) { text = bar; source = "barcode"; }
       else if (r.err && !ai) throw r.err;
       settled = true;   // the barcode reader may still be busy; it must not overwrite the result
