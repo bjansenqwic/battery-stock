@@ -307,7 +307,7 @@
     d.innerHTML = '<div style="background:var(--surface,#fff);color:var(--ink,#14202c);border:1px solid var(--line,#d5dbe2);border-radius:8px;padding:28px;max-width:420px;width:100%;text-align:center;display:flex;flex-direction:column;gap:14px;font-family:Figtree,system-ui,sans-serif">' +
       '<h1 style="margin:0;font-size:24px">Battery Stock</h1><p style="margin:0;color:var(--muted,#5b6876)">Sign in with your work Microsoft account to check batteries in and out.</p>' +
       '<button type="button" id="xlSignBtn" style="border:0;border-radius:999px;padding:13px 16px;font:600 16px Figtree,system-ui,sans-serif;cursor:pointer;background:var(--accent,#0a0a0a);color:var(--accent-ink,#fff)">Sign in with Microsoft</button>' +
-      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-26d</div></div>';
+      '<div id="xlSignMsg" style="font-size:13px;color:var(--danger,#b42318)"></div><div style="font-size:11px;color:var(--muted,#5b6876)">App version 2026-11-27a</div></div>';
     document.body.append(d);
     d.querySelector("#xlSignMsg").textContent = msg || "";
     d.querySelector("#xlSignBtn").addEventListener("click", async () => {
@@ -363,6 +363,67 @@
     document.addEventListener("visibilitychange", () => { if (!document.hidden && !busy && st.loaded) refresh().catch(() => {}); });
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+
+  // ---------- reading the printed text (OCR) ----------
+  // The letters and digits on the label are read first; barcodes are the backup. Tesseract (from the jsDelivr CDN)
+  // loads on first use and is kept ready. bsOCR is also used by the page for "Use a photo".
+  const OCR_CDN = "https://cdn.jsdelivr.net/npm/";
+  let ocrP = null;
+  function getOCR() {
+    if (ocrP) return ocrP;
+    ocrP = (async () => {
+      if (!window.Tesseract) await new Promise((res, rej) => { const s = document.createElement("script"); s.src = OCR_CDN + "tesseract.js@5.1.1/dist/tesseract.min.js"; s.onload = res; s.onerror = rej; document.head.append(s); });
+      const w = await window.Tesseract.createWorker("eng", 1, { workerPath: OCR_CDN + "tesseract.js@5.1.1/dist/worker.min.js", corePath: OCR_CDN + "tesseract.js-core@5.1.1", langPath: OCR_CDN + "@tesseract.js-data/eng@1.0.0/4.0.0_best_int" });
+      return w;
+    })().catch(e => { ocrP = null; throw e; });
+    return ocrP;
+  }
+  const looksLikeSn = s => s.length >= 8 && s.length <= 32 && /[A-Z]/.test(s) && /\d{3}/.test(s);
+  // how: "label" = printed after S/N or Serial, "family" = a known S/N start, "guess" = the likeliest code on the label
+  function parseLabel(text) {
+    const lines = String(text || "").toUpperCase().split(/\n+/).map(l => l.trim()).filter(Boolean);
+    let sn = "", how = "", art = "";
+    for (let i = 0; i < lines.length && !sn; i++) {
+      const m = lines[i].match(/(?:S\/?N|SERIAL)(?:\s*(?:NO|NR)\.?)?\s*[:#.]?\s*([A-Z0-9][A-Z0-9 ]{5,})/);
+      if (m) { const t = m[1].replace(/\s+/g, ""); if (looksLikeSn(t)) { sn = t; how = "label"; } }
+      else if (/^(S\/?N|SERIAL)\b[^A-Z0-9]*$/.test(lines[i]) && lines[i + 1]) { const t = lines[i + 1].replace(/[^A-Z0-9]/g, ""); if (looksLikeSn(t)) { sn = t; how = "label"; } }
+    }
+    const tokens = lines.flatMap(l => l.split(/\s+/)).map(t => t.replace(/[^A-Z0-9]/g, "")).filter(Boolean);
+    const am = lines.join(" ").match(/ART\s*(?:#|NR\.?|NO\.?)?\s*[:.]?\s*(BA0{2}\d{3})/); art = am ? am[1] : (tokens.find(t => /^BA0{2}\d{3}$/.test(t)) || "");
+    const fam = t => { const m = t.match(/(BA\d{3}|WDHL|XWHL|BDLG|BPYT)/); return m && m.index <= 2 ? t.slice(m.index) : ""; };   // a known S/N start, also when a stray character was read in front of it
+    if (sn && how === "label" && fam(sn)) sn = fam(sn);
+    if (!sn) { const t = tokens.map(fam).find(t => t && looksLikeSn(t) && t !== art); if (t) { sn = t; how = "family"; } }
+    if (!sn) { const t = tokens.filter(t => looksLikeSn(t) && t !== art).sort((a, b) => b.length - a.length)[0]; if (t) { sn = t; how = "guess"; } }
+    return { sn: norm(sn), art: norm(art), how };
+  }
+  async function toCanvas(src, max, turn) {   // a picture, scaled down to max px on its long side, optionally turned a quarter
+    const bmp = await createImageBitmap(src), k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k), cv = document.createElement("canvas"), cx = cv.getContext("2d");
+    if (turn) { cv.width = h; cv.height = w; cx.translate(turn > 0 ? h : 0, turn > 0 ? 0 : w); cx.rotate(turn * Math.PI / 2); } else { cv.width = w; cv.height = h; }
+    cx.drawImage(bmp, 0, 0, w, h); return cv;
+  }
+  // read a picture as one block of text, then as scattered words; the first sure S/N wins
+  async function readText(w, img, modes = ["6", "11"]) {
+    let best = null;
+    for (const psm of modes) {
+      await w.setParameters({ tessedit_pageseg_mode: psm });
+      const r = await w.recognize(img), p = parseLabel(r.data.text); p.conf = r.data.confidence || 0;
+      if (p.sn && p.how !== "guess") return p;
+      if (!best || (p.sn && !best.sn) || (p.art && !best.art)) best = Object.assign({}, best || {}, p);
+    }
+    return best;
+  }
+  window.bsOCR = async file => {   // { sn, art, unsure } from a photo of the label
+    const w = await getOCR(); let guess = null, art = "";
+    for (const turn of [0, 1, -1]) {   // as taken, then turned a quarter either way for upright labels
+      const p = await readText(w, await toCanvas(file, 1800, turn));
+      art = art || p.art;
+      if (p.sn && p.how !== "guess") return { sn: p.sn, art: p.art || art, unsure: p.conf < 55 };
+      if (p.sn && !guess) guess = p;
+    }
+    return guess ? { sn: guess.sn, art: guess.art || art, unsure: true } : { sn: "", art, unsure: false };
+  };
+  if (navigator.mediaDevices) setTimeout(() => getOCR().catch(() => {}), 5000);   // get the text reader ready before the first scan
 
   // ---------- live camera scanner ----------
   // Outside Claude the browser may use the camera, so Scan opens a live picture that reads the code by itself.
@@ -439,27 +500,44 @@
       if (caps.focusMode && caps.focusMode.includes("continuous")) track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
       if (caps.torch) { let on = false; torch.hidden = false; torch.textContent = "Light on";
         torch.onclick = () => { on = !on; track.applyConstraints({ advanced: [{ torch: on }] }).catch(() => {}); torch.textContent = on ? "Light off" : "Light on"; }; }
-      msg.textContent = "Hold the barcode inside the orange frame. It is read by itself.";
+      msg.textContent = "Hold the label inside the orange frame. The printed S/N is read first; the barcode is the backup.";
       const types = new Set(((st.settings && st.settings.types) || []).map(t => norm(t.name)));
-      let last = "", lastAt = 0; scanning = true;
+      const setType = code => { const sel = document.getElementById("model"), opt = [...sel.options].find(o => norm(o.value) === code); if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true })); } };
+      let last = "", lastAt = 0, done = false, ocrOk = true, ocrSn = "", bar = ""; const startAt = Date.now(); scanning = true;
+      const finish = (code, how) => {   // fill in the S/N and go on with the form
+        if (done) return; done = true; closeCam(); if (navigator.vibrate) navigator.vibrate(60);
+        const sn = document.getElementById("sn"); sn.value = code; sn.focus();
+        sn.dispatchEvent(new Event("input", { bubbles: true }));
+        setTimeout(() => sn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })), 50);
+        const hint = document.getElementById("camHint"); if (hint) hint.textContent = how === "text" ? `Read from the printed label: ${code}. Check it against the label.` : `Barcode read: ${code}.`;
+      };
+      // 1. the printed letters and digits, read from the middle of the picture
+      (async () => {
+        let w; try { w = await getOCR(); } catch { ocrOk = false; return; }
+        const cv = document.createElement("canvas"), cx = cv.getContext("2d", { willReadFrequently: true }); let tries = 0;
+        while (scanning && !m.hidden && !done) {
+          const vw = video.videoWidth, vh = video.videoHeight;
+          if (vw) {
+            const sw = vw * .8, sh = vh * .5, k = Math.min(1, 1400 / sw); cv.width = Math.round(sw * k); cv.height = Math.round(sh * k);
+            cx.drawImage(video, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, cv.width, cv.height);
+            try { const p = await readText(w, cv, [++tries % 2 ? "6" : "11"]);   // block and scattered reading take turns
+              if (p.art && types.has(p.art)) setType(p.art);
+              if (p.sn && p.how !== "guess" && p.conf >= 50) { if (p.sn === ocrSn || p.how === "label" || p.sn === bar) { finish(p.sn, "text"); return; } ocrSn = p.sn; }   // a code read twice, or printed after S/N, counts
+            } catch {}
+          }
+          await new Promise(r => setTimeout(r, 120));
+        }
+      })();
+      // 2. the barcode: used when the text gives nothing within 3 seconds, or when it says the same
       const tick = async () => {
-        if (!scanning || m.hidden) return;
+        if (!scanning || m.hidden || done) return;
         let codes = []; try { codes = await det.read(video); } catch {}
         for (const raw of codes) {
           const code = clean(raw); if (!code) continue;
-          if (code === last && Date.now() - lastAt < 2500) continue; last = code; lastAt = Date.now();
-          if (types.has(code)) {   // the type barcode: fill in the type and keep looking for the S/N
-            const sel = document.getElementById("model"), opt = [...sel.options].find(o => norm(o.value) === code);
-            if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true })); }
-            msg.textContent = `Type ${code} read. Now point the camera at the serial number barcode.`; continue;
-          }
-          closeCam(); if (navigator.vibrate) navigator.vibrate(60);
-          const sn = document.getElementById("sn"); sn.value = code; sn.focus();
-          sn.dispatchEvent(new Event("input", { bubbles: true }));
-          setTimeout(() => sn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })), 50);
-          const hint = document.getElementById("camHint"); if (hint) hint.textContent = `Barcode read: ${code}.`;
-          return;
+          if (types.has(code)) { if (code !== last) { setType(code); msg.textContent = `Type ${code} read. Now hold the serial number in the frame.`; } last = code; lastAt = Date.now(); continue; }
+          bar = code;
         }
+        if (bar && (!ocrOk || bar === ocrSn || Date.now() - startAt > 3000)) { finish(bar, "barcode"); return; }
         setTimeout(tick, det.kind === "native" ? 60 : 30);
       };
       tick();
